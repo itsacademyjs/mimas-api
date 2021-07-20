@@ -1,0 +1,68 @@
+{
+    "name": "blogcast",
+    "version": "0.1.0",
+    "main": "app/start.js",
+    "private": true,
+    "engines": {
+        "node": ">= 16.2.0"
+    },
+    "scripts": {
+        "start": "nodemon --exec \"eslint && node ./app/start.js\"",
+        "run": "node ./app/start.js",
+        "test": "mocha test --recursive"
+    },
+    "dependencies": {
+        "@google-cloud/storage": "^5.8.4",
+        "@sentry/node": "^6.6.0",
+        "@sentry/tracing": "^6.6.0",
+        "cors": "^2.8.5",
+        "date-fns": "^2.16.1",
+        "dotenv": "^8.2.0",
+        "express": "^4.17.1",
+        "faker": "^5.5.3",
+        "google-auth-library": "^6.1.4",
+        "iso-language-codes": "^1.1.0",
+        "joi": "^17.3.0",
+        "mongoose": "^5.11.9",
+        "mongoose-paginate-v2": "^1.3.13",
+        "morgan": "^1.10.0",
+        "slugify": "^1.4.6",
+        "uuid": "^8.3.2"
+    },
+    "devDependencies": {
+        "chai": "^4.3.4",
+        "eslint": "^7.17.0",
+        "eslint-config-airbnb-base": "^14.2.1",
+        "eslint-config-prettier": "^8.3.0",
+        "eslint-plugin-import": "^2.23.4",
+        "eslint-plugin-mocha": "^9.0.0",
+        "eslint-plugin-node": "^11.1.0",
+        "eslint-plugin-prettier": "^3.4.0",
+        "eslint-plugin-security": "^1.4.0",
+        "husky": "^4.3.6",
+        "lint-staged": "^11.0.0",
+        "mocha": "^9.0.1",
+        "nodemon": "^2.0.6",
+        "prettier": "^2.2.1",
+        "supertest": "^6.1.3"
+    },
+    "husky": {
+        "hooks": {
+            "pre-commit": "lint-staged"
+        }
+    },
+    "lint-staged": {
+        "*.js": [
+            "eslint --fix",
+            "prettier --write"
+        ],
+        "*.json": [
+            "prettier --write"
+        ]
+    },
+    "nodemonConfig": {
+        "ignore": [
+            "node_modules/*"
+        ]
+    }
+}

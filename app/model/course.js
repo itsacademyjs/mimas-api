@@ -1,0 +1,127 @@
+const mongoose = require("mongoose");
+const paginate = require("mongoose-paginate-v2");
+
+const { languageCodes, courseStatuses } = require("../util/constants");
+
+const { Schema } = mongoose;
+
+const resourceSchema = new Schema({
+    description: {
+        type: String,
+        minlength: 1,
+        maxlength: 128,
+        required: true,
+        trim: true,
+    },
+    icon: {
+        type: String,
+        maxlength: 40,
+        required: true,
+        trim: true,
+    },
+});
+
+const courseSchema = new Schema(
+    {
+        title: {
+            type: String,
+            minlength: 16,
+            maxlength: 504,
+            required: true,
+            trim: true,
+        },
+        description: {
+            type: String,
+            maxlength: 1024,
+            required: true,
+            trim: true,
+        },
+        brief: {
+            type: String,
+            maxlength: 160,
+            required: true,
+            trim: true,
+        },
+        creator: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+        },
+        slug: {
+            type: String,
+            trim: true,
+            unique: true,
+            required: true,
+        },
+        imageURL: {
+            type: String,
+            trim: true,
+            default: null,
+        },
+        languageCode: {
+            type: String,
+            enum: languageCodes,
+            default: "en",
+        },
+        linear: {
+            type: Boolean,
+            default: false,
+        },
+        actualPrice: {
+            type: Number,
+            default: 0,
+            integer: true,
+            get: (value) => Math.round(value),
+            set: (value) => Math.round(value),
+        },
+        discountedPrice: {
+            type: Number,
+            default: 0,
+            integer: true,
+            get: (value) => Math.round(value),
+            set: (value) => Math.round(value),
+        },
+        requirements: {
+            type: [
+                {
+                    type: String,
+                    maxlength: 512,
+                },
+            ],
+            default: [],
+        },
+        objectives: {
+            type: [
+                {
+                    type: String,
+                    maxlength: 512,
+                },
+            ],
+            default: [],
+        },
+        chapters: {
+            type: [
+                {
+                    type: Schema.Types.ObjectId,
+                    ref: "Chapter",
+                },
+            ],
+            default: [],
+        },
+        resources: {
+            type: [resourceSchema],
+            default: [],
+        },
+        status: {
+            type: String,
+            enum: courseStatuses,
+            default: "private",
+            required: true,
+        },
+    },
+    { timestamps: true }
+);
+
+courseSchema.plugin(paginate);
+
+module.exports = mongoose.model("Course", courseSchema);

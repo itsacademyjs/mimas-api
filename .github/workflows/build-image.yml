@@ -1,0 +1,46 @@
+name: Build
+
+on:
+  workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build Image
+    concurrency:
+      group: build-master
+      cancel-in-progress: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@master
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+          export_default_credentials: true
+      
+      - name: Create image name
+        run: |
+          echo "IMAGE_NAME=gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_APP_NAME }}:$(git rev-parse --short HEAD)" \
+            >> $GITHUB_ENV
+
+      - name: Build Docker image
+        run: docker build . --tag $IMAGE_NAME
+
+      - name: Configure Docker to use Google Cloud Platform
+        run: gcloud auth configure-docker --quiet
+
+      - name: Push image to Google Cloud Container Registry
+        run: docker push $IMAGE_NAME
+
+      - name: Install Google Cloud components
+        run: gcloud components install beta --quiet
+
+      - name: Deploy on Google Cloud Run
+        run: |
+          gcloud beta run deploy ${{ secrets.GCP_APP_NAME }} --quiet \
+            --image $IMAGE_NAME --project ${{ secrets.GCP_PROJECT_ID }} \
+            --region asia-southeast1 --platform managed --allow-unauthenticated \
+            --vpc-connector default-connector
