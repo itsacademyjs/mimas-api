@@ -1,21 +1,25 @@
 const mongoose = require("mongoose");
 const joi = require("joi");
 const slugify = require("slugify");
-const { v4: uuidv4 } = require("uuid");
 
 const asyncMiddleware = require("../middleware/asyncMiddleware");
 const constants = require("../util/constants");
 const httpStatus = require("../util/httpStatus");
 const Section = require("../model/section");
+const Chapter = require("../model/chapter");
+const { runAsTransaction } = require("../util");
 
 const { Types } = mongoose;
 
 const toExternal = (section) => {
     const { creator } = section;
     return {
+        id: section._id.toString(),
         title: section.title,
+        type: section.type,
         description: section.description,
         brief: section.brief,
+        chapter: section.chapter,
         creator: {
             id: creator._id,
             firstName: creator.firstName,
@@ -23,26 +27,40 @@ const toExternal = (section) => {
             pictureURL: creator.pictureURL,
         },
         slug: section.slug,
-        languageCode: section.languageCode,
         status: section.status,
+        content: section.content,
+        createdAt: section.createdAt.toISOString(),
+        updatedAt: section.updatedAt.toISOString(),
     };
 };
 
-const sectionSchema = joi.object({
+const createSchema = joi.object({
     title: joi.string().min(16).max(504).required(true),
-    description: joi.string().max(1024).required(true),
-    brief: joi.string().max(160).required(true),
-    languageCode: joi
+    type: joi
         .string()
-        .valid(...constants.languageCodes)
-        .default("en"),
+        .valid(...constants.sectionTypes)
+        .required(true),
+    chapter: joi.string().regex(constants.identifierPattern).required(true),
+    description: joi.string().allow("").max(1024),
+    brief: joi.string().allow("").max(160),
+});
+
+// NOTE: The section type cannot be updated once created.
+// NOTE: As of now, a section cannot be moved to a different chapter.
+const updateSchema = joi.object({
+    title: joi.string().min(16).max(504),
+    description: joi.string().allow("").max(1024),
+    brief: joi.string().allow("").max(160),
+    content: joi.string().allow("").max(10240),
 });
 
 const attachRoutes = (router) => {
     router.post(
         "/sections",
         asyncMiddleware(async (request, response) => {
-            const { error, value } = sectionSchema.validate(request.body);
+            const { error, value } = createSchema.validate(request.body, {
+                stripUnknown: true,
+            });
 
             if (error) {
                 response.status(httpStatus.BAD_REQUEST).json({
@@ -51,20 +69,29 @@ const attachRoutes = (router) => {
                 return;
             }
 
+            const id = new Types.ObjectId();
             const slug = `${slugify(value.title, {
                 replacement: "-",
                 lower: true,
                 strict: true,
-            })}-${uuidv4()}`;
-            const newCourse = new Section({
+            })}-${id.toString()}`;
+            const newSection = new Section({
                 ...value,
+                _id: id,
                 creator: request.user._id,
                 slug,
                 status: "private",
             });
-            await newCourse.save();
+            await runAsTransaction(async () => {
+                await newSection.save();
+                await Chapter.findByIdAndUpdate(value.chapter, {
+                    $push: {
+                        sections: id,
+                    },
+                }).exec();
+            });
 
-            response.status(httpStatus.CREATED).json(toExternal(newCourse));
+            response.status(httpStatus.CREATED).json(toExternal(newSection));
         })
     );
 
@@ -106,16 +133,18 @@ const attachRoutes = (router) => {
 
     // TODO: If there no images and the section is published, it needs to unpublished.
     router.patch(
-        "/sections/:courseId",
+        "/sections/:sectionId",
         asyncMiddleware(async (request, response) => {
-            if (!constants.identifierPattern.test(request.params.courseId)) {
+            if (!constants.identifierPattern.test(request.params.sectionId)) {
                 response.status(httpStatus.BAD_REQUEST).json({
                     message: "The specified section identifier is invalid.",
                 });
                 return;
             }
 
-            const { error, value } = sectionSchema.validate(request.body);
+            const { error, value } = updateSchema.validate(request.body, {
+                stripUnknown: true,
+            });
             if (error) {
                 response.status(httpStatus.BAD_REQUEST).json({
                     message: error.message,
@@ -125,7 +154,7 @@ const attachRoutes = (router) => {
 
             const section = await Section.findOneAndUpdate(
                 {
-                    _id: new Types.ObjectId(request.params.courseId),
+                    _id: new Types.ObjectId(request.params.sectionId),
                     creator: request.user._id,
                 },
                 value,
@@ -136,6 +165,7 @@ const attachRoutes = (router) => {
             )
                 .populate("creator")
                 .exec();
+            console.log(value);
 
             if (!section) {
                 response.status(httpStatus.NOT_FOUND).json({
@@ -150,10 +180,10 @@ const attachRoutes = (router) => {
     );
 
     router.patch(
-        "/sections/:courseId/public",
+        "/sections/:sectionId/public",
         asyncMiddleware(async (request, response) => {
-            const { courseId } = request.params;
-            if (!constants.identifierPattern.test(courseId)) {
+            const { sectionId } = request.params;
+            if (!constants.identifierPattern.test(sectionId)) {
                 response.status(httpStatus.BAD_REQUEST).json({
                     message: "The specified section identifier is invalid.",
                 });
@@ -161,7 +191,7 @@ const attachRoutes = (router) => {
             }
 
             const section = await Section.findOne({
-                _id: courseId,
+                _id: sectionId,
                 creator: request.user._id,
             }).exec();
             if (!section) {
@@ -182,10 +212,10 @@ const attachRoutes = (router) => {
     );
 
     router.patch(
-        "/sections/:courseId/private",
+        "/sections/:sectionId/private",
         asyncMiddleware(async (request, response) => {
-            const { courseId } = request.params;
-            if (!constants.identifierPattern.test(courseId)) {
+            const { sectionId } = request.params;
+            if (!constants.identifierPattern.test(sectionId)) {
                 response.status(httpStatus.BAD_REQUEST).json({
                     message: "The specified section identifier is invalid.",
                 });
@@ -193,7 +223,7 @@ const attachRoutes = (router) => {
             }
 
             const section = await Section.findOneAndUpdate(
-                { _id: courseId, creator: request.user._id },
+                { _id: sectionId, creator: request.user._id },
                 {
                     status: "private",
                 },

@@ -1,21 +1,24 @@
 const mongoose = require("mongoose");
 const joi = require("joi");
 const slugify = require("slugify");
-const { v4: uuidv4 } = require("uuid");
 
 const asyncMiddleware = require("../middleware/asyncMiddleware");
 const constants = require("../util/constants");
 const httpStatus = require("../util/httpStatus");
 const Chapter = require("../model/chapter");
+const Course = require("../model/course");
+const { runAsTransaction } = require("../util");
 
 const { Types } = mongoose;
 
 const toExternalSection = (section) => {
     const { creator } = section;
     return {
+        id: section._id.toString(),
         title: section.title,
         description: section.description,
         brief: section.brief,
+        type: section.type,
         creator: {
             id: creator._id,
             firstName: creator.firstName,
@@ -23,49 +26,50 @@ const toExternalSection = (section) => {
             pictureURL: creator.pictureURL,
         },
         slug: section.slug,
-        languageCode: section.languageCode,
         status: section.status,
     };
 };
 
-const toExternal = (chapter) => {
-    const { creator } = chapter;
-    return {
-        title: chapter.title,
-        description: chapter.description,
-        brief: chapter.brief,
-        creator: {
-            id: creator._id,
-            firstName: creator.firstName,
-            lastName: creator.lastName,
-            pictureURL: creator.pictureURL,
-        },
-        slug: chapter.slug,
-        languageCode: chapter.languageCode,
-        sections: chapter.sections.map(toExternalSection),
-        status: chapter.status,
-    };
-};
+const toExternal = (chapter, extended) => ({
+    id: chapter._id,
+    title: chapter.title,
+    description: chapter.description,
+    brief: chapter.brief,
+    course: chapter.course,
+    creator: chapter.creator,
+    slug: chapter.slug,
+    sections: extended
+        ? chapter.sections.map(toExternalSection)
+        : chapter.sections,
+    status: chapter.status,
+});
 
-const chapterSchema = joi.object({
+const createSchema = joi.object({
     title: joi.string().min(16).max(504).required(true),
-    description: joi.string().max(1024).required(true),
-    brief: joi.string().max(160).required(true),
-    languageCode: joi
-        .string()
-        .valid(...constants.languageCodes)
-        .default("en"),
+    course: joi.string().regex(constants.identifierPattern).required(true),
+    description: joi.string().allow("").max(1024),
+    brief: joi.string().allow("").max(160),
     sections: joi
         .array()
-        .items(joi.string().regex(constants.identifierPattern))
-        .default([]),
+        .items(joi.string().regex(constants.identifierPattern)),
+});
+
+const updateSchema = joi.object({
+    title: joi.string().min(16).max(504),
+    description: joi.string().allow("").max(1024),
+    brief: joi.string().allow("").max(160),
+    sections: joi
+        .array()
+        .items(joi.string().regex(constants.identifierPattern)),
 });
 
 const attachRoutes = (router) => {
     router.post(
         "/chapters",
         asyncMiddleware(async (request, response) => {
-            const { error, value } = chapterSchema.validate(request.body);
+            const { error, value } = createSchema.validate(request.body, {
+                stripUnknown: true,
+            });
 
             if (error) {
                 response.status(httpStatus.BAD_REQUEST).json({
@@ -74,20 +78,30 @@ const attachRoutes = (router) => {
                 return;
             }
 
+            const id = new Types.ObjectId();
             const slug = `${slugify(value.title, {
                 replacement: "-",
                 lower: true,
                 strict: true,
-            })}-${uuidv4()}`;
-            const newCourse = new Chapter({
+            })}-${id.toString()}`;
+            const newChapter = new Chapter({
+                _id: id,
                 ...value,
                 creator: request.user._id,
                 slug,
                 status: "private",
             });
-            await newCourse.save();
 
-            response.status(httpStatus.CREATED).json(toExternal(newCourse));
+            await runAsTransaction(async () => {
+                await newChapter.save();
+                await Course.findByIdAndUpdate(value.course, {
+                    $push: {
+                        chapters: id,
+                    },
+                }).exec();
+            });
+
+            response.status(httpStatus.CREATED).json(toExternal(newChapter));
         })
     );
 
@@ -129,16 +143,18 @@ const attachRoutes = (router) => {
 
     // TODO: If there no images and the chapter is published, it needs to unpublished.
     router.patch(
-        "/chapters/:courseId",
+        "/chapters/:chapterId",
         asyncMiddleware(async (request, response) => {
-            if (!constants.identifierPattern.test(request.params.courseId)) {
+            if (!constants.identifierPattern.test(request.params.chapterId)) {
                 response.status(httpStatus.BAD_REQUEST).json({
                     message: "The specified chapter identifier is invalid.",
                 });
                 return;
             }
 
-            const { error, value } = chapterSchema.validate(request.body);
+            const { error, value } = updateSchema.validate(request.body, {
+                stripUnknown: true,
+            });
             if (error) {
                 response.status(httpStatus.BAD_REQUEST).json({
                     message: error.message,
@@ -148,7 +164,7 @@ const attachRoutes = (router) => {
 
             const chapter = await Chapter.findOneAndUpdate(
                 {
-                    _id: new Types.ObjectId(request.params.courseId),
+                    _id: new Types.ObjectId(request.params.chapterId),
                     creator: request.user._id,
                 },
                 value,
@@ -158,6 +174,12 @@ const attachRoutes = (router) => {
                 }
             )
                 .populate("creator")
+                .populate({
+                    path: "sections",
+                    populate: {
+                        path: "creator",
+                    },
+                })
                 .exec();
 
             if (!chapter) {
@@ -168,15 +190,15 @@ const attachRoutes = (router) => {
                 return;
             }
 
-            response.status(httpStatus.OK).json(toExternal(chapter));
+            response.status(httpStatus.OK).json(toExternal(chapter, true));
         })
     );
 
     router.patch(
-        "/chapters/:courseId/public",
+        "/chapters/:chapterId/public",
         asyncMiddleware(async (request, response) => {
-            const { courseId } = request.params;
-            if (!constants.identifierPattern.test(courseId)) {
+            const { chapterId } = request.params;
+            if (!constants.identifierPattern.test(chapterId)) {
                 response.status(httpStatus.BAD_REQUEST).json({
                     message: "The specified chapter identifier is invalid.",
                 });
@@ -184,7 +206,7 @@ const attachRoutes = (router) => {
             }
 
             const chapter = await Chapter.findOne({
-                _id: courseId,
+                _id: chapterId,
                 creator: request.user._id,
             }).exec();
             if (!chapter) {
@@ -205,10 +227,10 @@ const attachRoutes = (router) => {
     );
 
     router.patch(
-        "/chapters/:courseId/private",
+        "/chapters/:chapterId/private",
         asyncMiddleware(async (request, response) => {
-            const { courseId } = request.params;
-            if (!constants.identifierPattern.test(courseId)) {
+            const { chapterId } = request.params;
+            if (!constants.identifierPattern.test(chapterId)) {
                 response.status(httpStatus.BAD_REQUEST).json({
                     message: "The specified chapter identifier is invalid.",
                 });
@@ -216,7 +238,7 @@ const attachRoutes = (router) => {
             }
 
             const chapter = await Chapter.findOneAndUpdate(
-                { _id: courseId, creator: request.user._id },
+                { _id: chapterId, creator: request.user._id },
                 {
                     status: "private",
                 },

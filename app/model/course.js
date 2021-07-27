@@ -1,7 +1,11 @@
 const mongoose = require("mongoose");
 const paginate = require("mongoose-paginate-v2");
 
-const { languageCodes, courseStatuses } = require("../util/constants");
+const {
+    languageCodes,
+    courseStatuses,
+    courseLevels,
+} = require("../util/constants");
 
 const { Schema } = mongoose;
 
@@ -25,22 +29,26 @@ const courseSchema = new Schema(
     {
         title: {
             type: String,
-            minlength: 16,
             maxlength: 504,
-            required: true,
+            default: null,
             trim: true,
         },
         description: {
             type: String,
             maxlength: 1024,
-            required: true,
+            default: null,
             trim: true,
         },
         brief: {
             type: String,
             maxlength: 160,
-            required: true,
+            default: null,
             trim: true,
+        },
+        level: {
+            type: String,
+            enum: courseLevels,
+            default: "all_levels",
         },
         creator: {
             type: Schema.Types.ObjectId,
@@ -50,8 +58,8 @@ const courseSchema = new Schema(
         slug: {
             type: String,
             trim: true,
-            unique: true,
-            required: true,
+            // unique: true,
+            // required: true,
         },
         imageURL: {
             type: String,

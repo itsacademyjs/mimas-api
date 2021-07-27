@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 const joi = require("joi");
 const slugify = require("slugify");
-const { v4: uuidv4 } = require("uuid");
 
 const asyncMiddleware = require("../middleware/asyncMiddleware");
 const constants = require("../util/constants");
@@ -13,9 +12,11 @@ const { Types } = mongoose;
 const toExternalSection = (section) => {
     const { creator } = section;
     return {
+        id: section._id.toString(),
         title: section.title,
         description: section.description,
         brief: section.brief,
+        type: section.type,
         creator: {
             id: creator._id,
             firstName: creator.firstName,
@@ -23,14 +24,17 @@ const toExternalSection = (section) => {
             pictureURL: creator.pictureURL,
         },
         slug: section.slug,
-        languageCode: section.languageCode,
         status: section.status,
+        content: section.content,
+        createdAt: section.createdAt.toISOString(),
+        updatedAt: section.updatedAt.toISOString(),
     };
 };
 
 const toExternalChapter = (chapter) => {
     const { creator } = chapter;
     return {
+        id: chapter._id.toString(),
         title: chapter.title,
         description: chapter.description,
         brief: chapter.brief,
@@ -41,19 +45,21 @@ const toExternalChapter = (chapter) => {
             pictureURL: creator.pictureURL,
         },
         slug: chapter.slug,
-        languageCode: chapter.languageCode,
         sections: chapter.sections.map(toExternalSection),
         status: chapter.status,
+        createdAt: chapter.createdAt.toISOString(),
+        updatedAt: chapter.updatedAt.toISOString(),
     };
 };
 
-const toExternal = (course) => {
+const toExternal = (course, extended) => {
     const { creator } = course;
     return {
-        id: course._id,
+        id: course._id.toString(),
         title: course.title,
         description: course.description,
         brief: course.brief,
+        level: course.level,
         creator: {
             id: creator._id,
             firstName: creator.firstName,
@@ -68,7 +74,9 @@ const toExternal = (course) => {
         discountedPrice: course.discountedPrice,
         requirements: course.requirements,
         objectives: course.objectives,
-        chapters: course.chapters.map(toExternalChapter),
+        chapters: extended
+            ? course.chapters.map(toExternalChapter)
+            : course.chapters,
         status: course.status,
         createdAt: course.createdAt.toISOString(),
         updatedAt: course.updatedAt.toISOString(),
@@ -86,39 +94,35 @@ const filterSchema = joi.object({
 });
 
 const courseSchema = joi.object({
-    title: joi.string().min(16).max(504).required(true),
-    description: joi.string().max(1024).required(true),
-    brief: joi.string().max(160).required(true),
-    imageURL: joi.string(),
-    languageCode: joi
-        .string()
-        .valid(...constants.languageCodes)
-        .default("en"),
-    linear: joi.boolean().default(false),
-    actualPrice: joi.number().integer().default(0),
-    discountedPrice: joi.number().integer().default(0),
-    requirements: joi.array().items(joi.string().max(512)).default([]),
-    objectives: joi.array().items(joi.string().max(512)).default([]),
+    title: joi.string().max(504).allow(""),
+    description: joi.string().max(1024).allow(""),
+    brief: joi.string().max(160).allow(""),
+    level: joi.string().valid(...constants.courseLevels),
+    imageURL: joi.string().allow(""),
+    languageCode: joi.string().valid(...constants.languageCodes),
+    linear: joi.boolean(),
+    actualPrice: joi.number().integer(),
+    discountedPrice: joi.number().integer(),
+    requirements: joi.array().items(joi.string().max(512)),
+    objectives: joi.array().items(joi.string().max(512)),
     chapters: joi
         .array()
-        .items(joi.string().regex(constants.identifierPattern))
-        .default([]),
-    resources: joi
-        .array()
-        .items(
-            joi.object({
-                title: joi.string().max(128),
-                icon: joi.string().max(40),
-            })
-        )
-        .default([]),
+        .items(joi.string().regex(constants.identifierPattern)),
+    resources: joi.array().items(
+        joi.object({
+            title: joi.string().max(128),
+            icon: joi.string().max(40),
+        })
+    ),
 });
 
 const attachRoutes = (router) => {
     router.post(
         "/courses",
         asyncMiddleware(async (request, response) => {
-            const { error, value } = courseSchema.validate(request.body);
+            const { error, value } = courseSchema.validate(request.body, {
+                stripUnknown: true,
+            });
 
             if (error) {
                 response.status(httpStatus.BAD_REQUEST).json({
@@ -127,13 +131,17 @@ const attachRoutes = (router) => {
                 return;
             }
 
-            const slug = `${slugify(value.title, {
-                replacement: "-",
-                lower: true,
-                strict: true,
-            })}-${uuidv4()}`;
+            const id = new Types.ObjectId();
+            const slug = value.title
+                ? `${slugify(value.title, {
+                      replacement: "-",
+                      lower: true,
+                      strict: true,
+                  })}-${id.toString()}`
+                : id.toString();
             const newCourse = new Course({
                 ...value,
+                _id: id,
                 creator: request.user._id,
                 slug,
                 status: "private",
@@ -166,7 +174,7 @@ const attachRoutes = (router) => {
             };
             const { page, limit } = value;
 
-            const articles = await Course.paginate(filters, {
+            const courses = await Course.paginate(filters, {
                 limit,
                 page: page + 1,
                 lean: true,
@@ -179,13 +187,13 @@ const attachRoutes = (router) => {
             });
 
             response.status(httpStatus.OK).json({
-                totalRecords: articles.totalDocs,
-                totalPages: articles.totalPages,
-                previousPage: articles.prevPage ? articles.prevPage - 1 : -1,
-                nextPage: articles.nextPage ? articles.nextPage - 1 : -1,
-                hasPreviousPage: articles.hasPrevPage,
-                hasNextPage: articles.hasNextPage,
-                records: articles.docs.map(toExternal),
+                totalRecords: courses.totalDocs,
+                totalPages: courses.totalPages,
+                previousPage: courses.prevPage ? courses.prevPage - 1 : -1,
+                nextPage: courses.nextPage ? courses.nextPage - 1 : -1,
+                hasPreviousPage: courses.hasPrevPage,
+                hasNextPage: courses.hasNextPage,
+                records: courses.docs.map((item) => toExternal(item, false)),
             });
         })
     );
@@ -211,7 +219,7 @@ const attachRoutes = (router) => {
             };
             const { page, limit } = value;
 
-            const articles = await Course.paginate(filters, {
+            const courses = await Course.paginate(filters, {
                 limit,
                 page: page + 1,
                 lean: true,
@@ -220,17 +228,17 @@ const attachRoutes = (router) => {
                 sort: {
                     updatedAt: -1,
                 },
-                populate: ["creator"],
+                populate: ["creator", "chapters"],
             });
 
             response.status(httpStatus.OK).json({
-                totalRecords: articles.totalDocs,
-                totalPages: articles.totalPages,
-                previousPage: articles.prevPage ? articles.prevPage - 1 : -1,
-                nextPage: articles.nextPage ? articles.nextPage - 1 : -1,
-                hasPreviousPage: articles.hasPrevPage,
-                hasNextPage: articles.hasNextPage,
-                records: articles.docs.map(toExternal),
+                totalRecords: courses.totalDocs,
+                totalPages: courses.totalPages,
+                previousPage: courses.prevPage ? courses.prevPage - 1 : -1,
+                nextPage: courses.nextPage ? courses.nextPage - 1 : -1,
+                hasPreviousPage: courses.hasPrevPage,
+                hasNextPage: courses.hasNextPage,
+                records: courses.docs.map(toExternal),
             });
         })
     );
@@ -248,6 +256,12 @@ const attachRoutes = (router) => {
             const filters = { _id: request.params.id };
             const course = await Course.findOne(filters)
                 .populate("creator")
+                .populate({
+                    path: "chapters",
+                    populate: {
+                        path: "sections",
+                    },
+                })
                 .exec();
 
             /* We return a 404 error:
@@ -267,7 +281,7 @@ const attachRoutes = (router) => {
                 return;
             }
 
-            response.status(httpStatus.OK).json(toExternal(course));
+            response.status(httpStatus.OK).json(toExternal(course, true));
         })
     );
 
@@ -282,7 +296,9 @@ const attachRoutes = (router) => {
                 return;
             }
 
-            const { error, value } = courseSchema.validate(request.body);
+            const { error, value } = courseSchema.validate(request.body, {
+                stripUnknown: true,
+            });
             if (error) {
                 response.status(httpStatus.BAD_REQUEST).json({
                     message: error.message,
@@ -302,6 +318,7 @@ const attachRoutes = (router) => {
                 }
             )
                 .populate("creator")
+                .populate("chapters")
                 .exec();
 
             if (!course) {

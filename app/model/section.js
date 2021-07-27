@@ -1,7 +1,11 @@
 const mongoose = require("mongoose");
 const paginate = require("mongoose-paginate-v2");
 
-const { languageCodes, sectionStatuses } = require("../util/constants");
+const {
+    languageCodes,
+    sectionStatuses,
+    sectionTypes,
+} = require("../util/constants");
 
 const { Schema } = mongoose;
 
@@ -11,20 +15,37 @@ const sectionSchema = new Schema(
             type: String,
             minlength: 16,
             maxlength: 504,
-            required: true,
+            default: "",
             trim: true,
+        },
+        type: {
+            type: String,
+            enum: sectionTypes,
+            default: "article",
+            required: true,
         },
         description: {
             type: String,
             maxlength: 1024,
-            required: true,
+            default: "",
             trim: true,
         },
         brief: {
             type: String,
             maxlength: 160,
-            required: true,
+            default: "",
             trim: true,
+        },
+        content: {
+            type: String,
+            maxlength: 10240,
+            default: null,
+            trim: true,
+        },
+        chapter: {
+            type: Schema.Types.ObjectId,
+            ref: "Chapter",
+            required: true,
         },
         creator: {
             type: Schema.Types.ObjectId,
@@ -34,13 +55,7 @@ const sectionSchema = new Schema(
         slug: {
             type: String,
             trim: true,
-            unique: true,
             required: true,
-        },
-        languageCode: {
-            type: String,
-            enum: languageCodes,
-            default: "en",
         },
         status: {
             type: String,

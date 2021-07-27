@@ -270,6 +270,10 @@ const courseStatuses = ["public", "private", "deleted", "archieved", "banned"];
 const chapterStatuses = ["public", "private", "deleted", "archieved", "banned"];
 const sectionStatuses = ["public", "private", "deleted", "archieved", "banned"];
 
+const courseLevels = ["beginner", "intermediate", "expert", "all_levels"];
+
+const sectionTypes = ["video", "article", "coding_excercise", "assignment"];
+
 module.exports = {
     paginateMaxLimit,
     paginateMinLimit,
@@ -283,4 +287,6 @@ module.exports = {
     courseStatuses,
     chapterStatuses,
     sectionStatuses,
+    courseLevels,
+    sectionTypes,
 };
