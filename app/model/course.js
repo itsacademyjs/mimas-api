@@ -107,6 +107,15 @@ const courseSchema = new Schema(
             ],
             default: [],
         },
+        targets: {
+            type: [
+                {
+                    type: String,
+                    maxlength: 512,
+                },
+            ],
+            default: [],
+        },
         chapters: {
             type: [
                 {

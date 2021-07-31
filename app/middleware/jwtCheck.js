@@ -20,7 +20,7 @@ const jwtCheck = (request, response, next) => {
     const { authorization } = request.headers;
 
     if (!authorization) {
-        response.status(httpStatus.BAD_REQUEST).json({
+        response.status(httpStatus.FORBIDDEN).json({
             message: "Please provide an authorization token.",
         });
         return;

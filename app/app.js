@@ -25,18 +25,27 @@ const requireRole = require("./middleware/requireRole");
 const unprotectedRoutes = [
     { method: "GET", url: "/articles/public-feed" },
     { method: "GET", url: "/articles/trending" },
+    { method: "GET", url: "/courses/public" },
+    { method: "GET", url: /^\/courses\/[a-z0-9]{24}\/public$/ },
     { method: "GET", url: "/version" },
 ];
+
+/* Gotta love JavaScript! */
+const isString = (s) => typeof s === "string" || s instanceof String;
 
 const isUnprotectedEndpoint = (request) => {
     const { url, method } = request;
     /* eslint-disable-next-line no-restricted-syntax */
     for (const unprotectedEndpoint of unprotectedRoutes) {
-        if (
-            unprotectedEndpoint.url === url &&
-            unprotectedEndpoint.method === method
-        ) {
-            return true;
+        if (unprotectedEndpoint.method === method) {
+            if (
+                (unprotectedEndpoint.url instanceof RegExp &&
+                    unprotectedEndpoint.url.test(url)) ||
+                (isString(unprotectedEndpoint.url) &&
+                    unprotectedEndpoint.url === url)
+            ) {
+                return true;
+            }
         }
     }
     return false;

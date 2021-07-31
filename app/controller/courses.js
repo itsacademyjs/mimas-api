@@ -74,9 +74,11 @@ const toExternal = (course, extended) => {
         discountedPrice: course.discountedPrice,
         requirements: course.requirements,
         objectives: course.objectives,
+        targets: course.targets,
         chapters: extended
             ? course.chapters.map(toExternalChapter)
             : course.chapters,
+        resources: course.resources,
         status: course.status,
         createdAt: course.createdAt.toISOString(),
         updatedAt: course.updatedAt.toISOString(),
@@ -105,6 +107,7 @@ const courseSchema = joi.object({
     discountedPrice: joi.number().integer(),
     requirements: joi.array().items(joi.string().max(512)),
     objectives: joi.array().items(joi.string().max(512)),
+    targets: joi.array().items(joi.string().max(512)),
     chapters: joi
         .array()
         .items(joi.string().regex(constants.identifierPattern)),
@@ -253,7 +256,10 @@ const attachRoutes = (router) => {
                 return;
             }
 
-            const filters = { _id: request.params.id };
+            const filters = {
+                _id: request.params.id,
+                creator: request.user._id,
+            };
             const course = await Course.findOne(filters)
                 .populate("creator")
                 .populate({
@@ -269,11 +275,45 @@ const attachRoutes = (router) => {
              * 2. Or, we found the course, but the current user does not own,
              *    and it is unpublished.
              */
-            if (
-                !course ||
-                (!course.status === "public" &&
-                    !course.creator._id.equals(request.user._id))
-            ) {
+            if (!course) {
+                response.status(httpStatus.NOT_FOUND).json({
+                    message:
+                        "Cannot find an course with the specified identifier.",
+                });
+                return;
+            }
+
+            response.status(httpStatus.OK).json(toExternal(course, true));
+        })
+    );
+
+    router.get(
+        "/courses/:id/public",
+        asyncMiddleware(async (request, response) => {
+            if (!constants.identifierPattern.test(request.params.id)) {
+                response.status(httpStatus.BAD_REQUEST).json({
+                    message: "The specified course identifier is invalid.",
+                });
+                return;
+            }
+
+            const filters = { _id: request.params.id, status: "public" };
+            const course = await Course.findOne(filters)
+                .populate("creator")
+                .populate({
+                    path: "chapters",
+                    populate: {
+                        path: "sections",
+                    },
+                })
+                .exec();
+
+            /* We return a 404 error:
+             * 1. If we did not find the course.
+             * 2. Or, we found the course, but the current user does not own,
+             *    and it is unpublished.
+             */
+            if (!course) {
                 response.status(httpStatus.NOT_FOUND).json({
                     message:
                         "Cannot find an course with the specified identifier.",
