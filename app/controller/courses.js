@@ -111,12 +111,7 @@ const courseSchema = joi.object({
     chapters: joi
         .array()
         .items(joi.string().regex(constants.identifierPattern)),
-    resources: joi.array().items(
-        joi.object({
-            title: joi.string().max(128),
-            icon: joi.string().max(40),
-        })
-    ),
+    resources: joi.array().items(joi.string().max(512)),
 });
 
 const attachRoutes = (router) => {

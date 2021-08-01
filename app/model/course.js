@@ -9,22 +9,6 @@ const {
 
 const { Schema } = mongoose;
 
-const resourceSchema = new Schema({
-    description: {
-        type: String,
-        minlength: 1,
-        maxlength: 128,
-        required: true,
-        trim: true,
-    },
-    icon: {
-        type: String,
-        maxlength: 40,
-        required: true,
-        trim: true,
-    },
-});
-
 const courseSchema = new Schema(
     {
         title: {
@@ -116,6 +100,15 @@ const courseSchema = new Schema(
             ],
             default: [],
         },
+        resources: {
+            type: [
+                {
+                    type: String,
+                    maxlength: 512,
+                },
+            ],
+            default: [],
+        },
         chapters: {
             type: [
                 {
@@ -123,10 +116,6 @@ const courseSchema = new Schema(
                     ref: "Chapter",
                 },
             ],
-            default: [],
-        },
-        resources: {
-            type: [resourceSchema],
             default: [],
         },
         status: {
