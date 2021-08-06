@@ -1,4 +1,4 @@
-name: Build
+name: Cloud Run Deploy
 
 on:
   workflow_dispatch
@@ -42,5 +42,5 @@ jobs:
         run: |
           gcloud beta run deploy ${{ secrets.GCP_APP_NAME }} --quiet \
             --image $IMAGE_NAME --project ${{ secrets.GCP_PROJECT_ID }} \
-            --region asia-southeast1 --platform managed --allow-unauthenticated \
-            --vpc-connector default-connector
+            --region asia-east1 --platform managed --allow-unauthenticated \
+            --vpc-connector academyjs-connector
