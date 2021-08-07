@@ -1,23 +1,22 @@
 const { OAuth2Client } = require("google-auth-library");
 const { Storage } = require("@google-cloud/storage");
 
-const {
-    GOOGLE_OAUTH_CLIENT_ID_WEB,
-    GOOGLE_OAUTH_CLIENT_ID_ANDROID,
-    PROJECT_ID,
-} = process.env;
+const { GOOGLE_OAUTH_CLIENT_ID_WEB, PROJECT_ID } = process.env;
 
 const oauth2Client = new OAuth2Client();
 
-const storage = new Storage({
-    projectId: PROJECT_ID,
-    keyFilename: "./credentials.json",
-});
+// TODO: Currently we do not need GCS.
+const storage =
+    undefined &&
+    new Storage({
+        projectId: PROJECT_ID,
+        keyFilename: "./credentials.json",
+    });
 
 const verifyToken = async (token) => {
     const ticket = await oauth2Client.verifyIdToken({
         idToken: token,
-        audience: [GOOGLE_OAUTH_CLIENT_ID_ANDROID, GOOGLE_OAUTH_CLIENT_ID_WEB],
+        audience: [GOOGLE_OAUTH_CLIENT_ID_WEB],
     });
     return ticket.getPayload();
 };
