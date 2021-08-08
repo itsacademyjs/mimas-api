@@ -1,11 +1,7 @@
 const mongoose = require("mongoose");
 const paginate = require("mongoose-paginate-v2");
 
-const {
-    languageCodes,
-    sectionStatuses,
-    sectionTypes,
-} = require("../util/constants");
+const { sectionStatuses, sectionTypes } = require("../util/constants");
 
 const { Schema } = mongoose;
 
@@ -13,7 +9,7 @@ const sectionSchema = new Schema(
     {
         title: {
             type: String,
-            minlength: 16,
+            minlength: 8,
             maxlength: 504,
             default: "",
             trim: true,

@@ -35,7 +35,7 @@ const toExternal = (section) => {
 };
 
 const createSchema = joi.object({
-    title: joi.string().min(16).max(504).required(true),
+    title: joi.string().min(8).max(504).required(true),
     type: joi
         .string()
         .valid(...constants.sectionTypes)
@@ -48,7 +48,7 @@ const createSchema = joi.object({
 // NOTE: The section type cannot be updated once created.
 // NOTE: As of now, a section cannot be moved to a different chapter.
 const updateSchema = joi.object({
-    title: joi.string().min(16).max(504),
+    title: joi.string().min(8).max(504),
     description: joi.string().allow("").max(1024),
     brief: joi.string().allow("").max(160),
     content: joi.string().allow("").max(10240),
