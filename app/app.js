@@ -27,6 +27,7 @@ const unprotectedRoutes = [
     { method: "GET", url: "/articles/trending" },
     { method: "GET", url: "/courses/public" },
     { method: "GET", url: /^\/courses\/[a-z0-9]{24}\/public$/ },
+    { method: "GET", url: /^\/sections\/[a-z0-9-]+\/public$/ },
     { method: "GET", url: "/version" },
 ];
 

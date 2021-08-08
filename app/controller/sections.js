@@ -124,7 +124,33 @@ const attachRoutes = (router) => {
             ) {
                 response.status(httpStatus.NOT_FOUND).json({
                     message:
-                        "Cannot find an section with the specified identifier.",
+                        "Cannot find a section with the specified identifier.",
+                });
+                return;
+            }
+
+            response.status(httpStatus.OK).json(toExternal(section));
+        })
+    );
+
+    router.get(
+        "/sections/:slug/public",
+        asyncMiddleware(async (request, response) => {
+            const { slug } = request.params;
+            const filters = {
+                slug,
+                // TODO: ENABLE THIS!
+                // status: "public",
+            };
+            const section = await Section.findOne(filters)
+                .populate("creator")
+                .exec();
+
+            /* We return a 404 error, if we did not find the section. */
+            if (!section) {
+                response.status(httpStatus.NOT_FOUND).json({
+                    message:
+                        "Cannot find a section with the specified slug/identifier.",
                 });
                 return;
             }
