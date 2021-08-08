@@ -112,12 +112,14 @@ const attachRoutes = (router) => {
 
             /* We return a 404 error:
              * 1. If we did not find the section.
-             * 2. Or, we found the section, but the current user does not own,
+             * 2. Or, we found the section, but it is deleted.
+             * 3. Or, we found the section, but the current user does not own,
              *    and it is unpublished.
              */
             if (
                 !section ||
-                (!section.status === "public" &&
+                section === "deleted" ||
+                (section.status !== "public" &&
                     !section.creator._id.equals(request.user._id))
             ) {
                 response.status(httpStatus.NOT_FOUND).json({
@@ -156,6 +158,9 @@ const attachRoutes = (router) => {
                 {
                     _id: new Types.ObjectId(request.params.sectionId),
                     creator: request.user._id,
+                    status: {
+                        $ne: "deleted",
+                    },
                 },
                 value,
                 {
@@ -197,7 +202,7 @@ const attachRoutes = (router) => {
             if (!section) {
                 response.status(httpStatus.NOT_FOUND).json({
                     message:
-                        "An section with the specified identifier does not exist.",
+                        "A section with the specified identifier does not exist.",
                 });
                 return;
             }
@@ -223,7 +228,13 @@ const attachRoutes = (router) => {
             }
 
             const section = await Section.findOneAndUpdate(
-                { _id: sectionId, creator: request.user._id },
+                {
+                    _id: sectionId,
+                    creator: request.user._id,
+                    status: {
+                        $ne: "deleted",
+                    },
+                },
                 {
                     status: "private",
                 },
@@ -236,12 +247,67 @@ const attachRoutes = (router) => {
             if (!section) {
                 response.status(httpStatus.NOT_FOUND).json({
                     message:
-                        "An section with the specified identifier does not exist.",
+                        "A section with the specified identifier does not exist.",
                 });
                 return;
             }
 
             response.status(httpStatus.OK).json(toExternal(section));
+        })
+    );
+
+    router.delete(
+        "/sections/:sectionId",
+        asyncMiddleware(async (request, response) => {
+            const { sectionId } = request.params;
+            if (!constants.identifierPattern.test(sectionId)) {
+                response.status(httpStatus.BAD_REQUEST).json({
+                    message: "The specified section identifier is invalid.",
+                });
+                return;
+            }
+
+            const result = runAsTransaction(async () => {
+                const section = await Section.findOneAndUpdate(
+                    {
+                        _id: sectionId,
+                        creator: request.user._id,
+                        status: {
+                            $ne: "deleted",
+                        },
+                    },
+                    {
+                        status: "deleted",
+                    },
+                    {
+                        new: true,
+                        lean: true,
+                    }
+                );
+
+                await Chapter.findOneAndUpdate(
+                    {
+                        _id: section.chapter,
+                    },
+                    {
+                        $pull: {
+                            sections: sectionId,
+                        },
+                    }
+                );
+
+                return section;
+            });
+
+            if (!result) {
+                response.status(httpStatus.NOT_FOUND).json({
+                    message:
+                        "A section with the specified identifier does not exist.",
+                });
+                return;
+            }
+
+            response.status(httpStatus.OK).json({ success: true });
         })
     );
 };

@@ -211,7 +211,7 @@ const attachRoutes = (router) => {
              */
             if (
                 !article ||
-                (!article.status === "public" &&
+                (article.status !== "public" &&
                     !article.author._id.equals(request.user._id))
             ) {
                 response.status(httpStatus.NOT_FOUND).json({

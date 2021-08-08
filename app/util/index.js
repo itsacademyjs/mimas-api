@@ -4,8 +4,9 @@ const runAsTransaction = async (callback) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-        await callback();
+        const result = await callback();
         await session.commitTransaction();
+        return result;
     } catch (error) {
         await session.abortTransaction();
         throw error;
