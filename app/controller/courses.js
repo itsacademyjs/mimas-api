@@ -236,7 +236,9 @@ const attachRoutes = (router) => {
                 nextPage: courses.nextPage ? courses.nextPage - 1 : -1,
                 hasPreviousPage: courses.hasPrevPage,
                 hasNextPage: courses.hasNextPage,
-                records: courses.docs.map(toExternal),
+                records: courses.docs.map((course) =>
+                    toExternal(course, false)
+                ),
             });
         })
     );
