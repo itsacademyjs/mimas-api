@@ -9,9 +9,9 @@ const { PORT, DATABASE_URL } = process.env;
 
 mongoose.set("debug", true);
 mongoose.connection.on("error", console.error.bind(console, " ❌ "));
-mongoose.connection.once("open", () => {
+mongoose.connection.once("open", async () => {
     console.log(" ✅ Database connection successfully established.");
-    const app = initialize();
+    const app = await initialize();
     http.createServer(app).listen(PORT, () => {
         console.log(
             ` 🎉 You can access the server at http://localhost:${PORT}`

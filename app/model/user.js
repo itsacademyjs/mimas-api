@@ -49,6 +49,7 @@ const userSchema = new Schema(
         emailVerified: {
             type: Boolean,
             default: false,
+            required: true,
         },
         roles: {
             type: [String],
