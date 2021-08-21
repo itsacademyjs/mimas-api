@@ -7,7 +7,7 @@ const typeDefs = gql`
     ${types}
 
     type Query {
-        getCourses(page: Int, limit: Int): [Course!]!
+        getCourses(page: Int, limit: Int): CoursePage!
         getCourseById(id: ID!): Course!
 
         getChapters(courseId: ID!, page: Int, limit: Int): [Chapter!]!
@@ -24,8 +24,7 @@ const resolvers = {
 
         getCourses: async (parent, values, context) => {
             const result = await courses.list(context.request, values, false);
-            console.log(result);
-            return result.records;
+            return result;
         },
 
         getCourseById: async (object, values, context) =>

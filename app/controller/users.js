@@ -54,6 +54,24 @@ const toExternal = (user) => {
     };
 };
 
+// TODO: Test null values
+/* NOTE: The following schema is used by `PATCH /users/:id` endpoint. Default values will cause
+ * existing values to be replaced when persisting to the database. Do not specify default values
+ * in the schema unless you know what you are doing.
+ */
+const updateSchema = joi.object({
+    firstName: joi.string().trim(),
+    lastName: joi.string().trim(),
+    gender: joi.string().valid(...genders),
+    countryCode: joi.string().valid(...countryCodes),
+    birthday: joi.date(),
+    contentLanguageCodes: joi
+        .array()
+        .items(joi.string().valid(...languageCodes)),
+    displayLanguageCode: joi.string().valid(...languageCodes),
+    about: joi.string().min(0).max(512).trim(),
+});
+
 const filterSchema = joi.object({
     page: joi.number().integer().default(0),
     limit: joi.number().integer().min(10).max(paginateMaxLimit).default(20),
@@ -77,24 +95,6 @@ const filterSchema = joi.object({
         .date()
         .when("date_range", { is: "custom", then: joi.required() }),
     search: joi.string().trim().allow(null).empty("").default(null),
-});
-
-// TODO: Test null values
-/* NOTE: The following schema is used by `PATCH /users/:id` endpoint. Default values will cause
- * existing values to be replaced when persisting to the database. Do not specify default values
- * in the schema unless you know what you are doing.
- */
-const userSchema = joi.object({
-    firstName: joi.string().trim(),
-    lastName: joi.string().trim(),
-    gender: joi.string().valid(...genders),
-    countryCode: joi.string().valid(...countryCodes),
-    birthday: joi.date(),
-    contentLanguageCodes: joi
-        .array()
-        .items(joi.string().valid(...languageCodes)),
-    displayLanguageCode: joi.string().valid(...languageCodes),
-    about: joi.string().min(0).max(512).trim(),
 });
 
 // TODO: Should we implement a transaction here?
@@ -168,7 +168,7 @@ const update = async (context, userId, attributes) => {
         throw new BadRequestError("The specified user identifier is invalid.");
     }
 
-    const { error, value } = userSchema.validate(attributes, {
+    const { error, value } = updateSchema.validate(attributes, {
         stripUnknown: true,
     });
     if (error) {

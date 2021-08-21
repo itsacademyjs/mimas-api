@@ -113,6 +113,8 @@ const list = async (context, parameters, privateRequest) => {
         },
     });
 
+    console.log("2", courses);
+
     return {
         totalRecords: courses.totalDocs,
         totalPages: courses.totalPages,
@@ -132,12 +134,14 @@ const getById = async (context, courseId, onlyPublished) => {
     }
 
     const filters = {
-        _id: context.params.id,
+        _id: courseId,
         ...(onlyPublished
             ? { status: "public" }
             : { creator: context.user._id }),
     };
     const course = await Course.findOne(filters).exec();
+
+    console.log(course);
 
     /* We return a 404 error:
      * 1. If we did not find the course.
@@ -146,7 +150,7 @@ const getById = async (context, courseId, onlyPublished) => {
      */
     if (!course) {
         throw new NotFoundError(
-            "Cannot find an course with the specified identifier."
+            "Cannot find a course with the specified identifier."
         );
     }
 

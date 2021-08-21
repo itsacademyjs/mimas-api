@@ -107,8 +107,18 @@ const getById = async (context, sectionId) => {
     return toExternal(section);
 };
 
-const list = async (context, sectionIds) =>
-    Section.find({ _id: { $in: sectionIds } }).exec();
+const list = async (context, sectionIds) => {
+    const unorderedSections = await Section.find({
+        _id: { $in: sectionIds },
+    }).exec();
+    const object = {};
+    unorderedSections.forEach((item) => {
+        object[item._id] = item;
+    });
+    // eslint-disable-next-line security/detect-object-injection
+    const result = sectionIds.map((key) => object[key]);
+    return result;
+};
 
 // TODO: If there no images and the section is published, it needs to unpublished.
 const update = async (context, sectionId, attributes) => {

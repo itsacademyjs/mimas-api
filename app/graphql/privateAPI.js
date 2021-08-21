@@ -2,7 +2,7 @@ const { ApolloServer, gql } = require("apollo-server-express");
 
 const types = require("./typeDefinitions");
 const { courses, chapters, sections, users } = require("../controller");
-const { jwtCheck } = require("../middleware");
+const { jwtCheck, requireRole } = require("../middleware");
 
 const typeDefs = gql`
     ${types}
@@ -11,78 +11,73 @@ const typeDefs = gql`
         createCourse(
             title: String
             description: String
-            brief: String
             level: CourseLevel
             imageURL: String
             languageCode: Language
             linear: Boolean
             actualPrice: Float
             discountedPrice: Float
-            requirements: [String!]!
-            objectives: [String!]!
-            targets: [String!]!
-            chapters: [String!]!
-            resources: [String!]!
+            requirements: [String!]
+            objectives: [String!]
+            targets: [String!]
+            chapters: [String!]
+            resources: [String!]
         ): Course!
         updateCourse(
-            id: ID!
+            courseId: ID!
             title: String
             description: String
-            brief: String
             level: CourseLevel
             imageURL: String
             languageCode: Language
             linear: Boolean
             actualPrice: Float
             discountedPrice: Float
-            requirements: [String!]!
-            objectives: [String!]!
-            targets: [String!]!
-            chapters: [String!]!
-            resources: [String!]!
+            requirements: [String!]
+            objectives: [String!]
+            targets: [String!]
+            chapters: [String!]
+            resources: [String!]
         ): Course!
         publishCourse(courseId: ID!): Course!
         unpublishCourse(courseId: ID!): Course!
+        deleteCourse(courseId: ID!): Boolean!
 
         createChapter(
             title: String
             course: String!
             description: String
-            brief: String
-            sections: [String!]!
+            sections: [String!]
         ): Chapter!
         updateChapter(
-            chapterId: String!
+            chapterId: ID!
             title: String
-            course: String!
             description: String
-            brief: String
-            sections: [String!]!
+            sections: [String!]
         ): Chapter!
         publishChapter(chapterId: ID!): Chapter!
         unpublishChapter(chapterId: ID!): Chapter!
+        deleteChapter(chapterId: ID!): Boolean!
 
         createSection(
             title: String
             type: SectionType!
             chapter: String!
             description: String
-            brief: String
         ): Section!
         updateSection(
-            sectionId: String!
+            sectionId: ID!
             title: String
-            course: String!
             description: String
-            brief: String
-            sections: [String!]!
+            content: String
         ): Section!
         publishSection(sectionId: ID!): Section!
         unpublishSection(sectionId: ID!): Section!
+        deleteSection(sectionId: ID!): Boolean!
     }
 
     type Query {
-        getCourses(page: Int, limit: Int): [Course!]!
+        getCourses(page: Int, limit: Int): CoursePage!
         getCourseById(courseId: ID!): Course!
 
         getChapters(courseId: ID!, page: Int, limit: Int): [Chapter!]!
@@ -94,74 +89,88 @@ const typeDefs = gql`
 `;
 
 const resolvers = {
-    Query: {
+    Mutation: {
         // Course
 
-        createCourse: async (values, request) =>
-            courses.create(request, values),
+        createCourse: async (parent, values, context) =>
+            courses.create(context.request, values),
 
-        updateCourse: async (values, request) =>
-            courses.update(request, values.id, values),
+        updateCourse: async (parent, values, context) =>
+            courses.update(context.request, values.courseId, values),
 
-        publishCourse: async (values, request) =>
-            courses.publish(request, values.id),
+        publishCourse: async (parent, values, context) =>
+            courses.publish(context.request, values.courseId),
 
-        unpublishCourse: async (values, request) =>
-            courses.unpublish(request, values.id),
+        unpublishCourse: async (parent, values, context) =>
+            courses.unpublish(context.request, values.courseId),
 
-        deleteCourse: async (values, request) =>
-            courses.delete(request, values.id),
-
-        getCourses: async (values, request) => courses.list(request, values),
-
-        getCourseById: async (values, request) =>
-            courses.getById(request, values.id),
+        deleteCourse: async (parent, values, context) =>
+            courses.delete(context.request, values.courseId),
 
         // Chapter
 
-        createChapter: async (values, request) =>
-            chapters.create(request, values),
+        createChapter: async (parent, values, context) =>
+            chapters.create(context.request, values),
 
-        updateChapter: async (values, request) =>
-            chapters.update(request, values.id, values),
+        updateChapter: async (parent, values, context) =>
+            chapters.update(context.request, values.chapterId, values),
 
-        publishChapter: async (values, request) =>
-            chapters.publish(request, values.id),
+        publishChapter: async (parent, values, context) =>
+            chapters.publish(context.request, values.chapterId),
 
-        unpublishChapter: async (values, request) =>
-            chapters.unpublish(request, values.id),
+        unpublishChapter: async (parent, values, context) =>
+            chapters.unpublish(context.request, values.chapterId),
 
-        deleteChapter: async (values, request) =>
-            chapters.delete(request, values.id),
-
-        getChapters: async (values, request) => chapters.list(request, values),
-
-        getChapterById: async (values, request) =>
-            chapters.getById(request, values.id),
+        deleteChapter: async (parent, values, context) =>
+            chapters.delete(context.request, values.chapterId),
 
         // Section
 
-        createSection: async (values, request) =>
-            sections.create(request, values),
+        createSection: async (parent, values, context) =>
+            sections.create(context.request, values),
 
-        updateSection: async (values, request) =>
-            sections.update(request, values.id, values),
+        updateSection: async (parent, values, context) =>
+            sections.update(context.request, values.sectionId, values),
 
-        publishSection: async (values, request) =>
-            sections.publish(request, values.id),
+        publishSection: async (parent, values, context) =>
+            sections.publish(context.request, values.sectionId),
 
-        unpublishSection: async (values, request) =>
-            sections.unpublish(request, values.id),
+        unpublishSection: async (parent, values, context) =>
+            sections.unpublish(context.request, values.sectionId),
 
-        deleteSection: async (values, request) =>
-            sections.delete(request, values.id),
-
-        getSections: async (values, request) => sections.list(request, values),
-
-        getSectionById: async (values, request) =>
-            sections.getById(request, values.id),
+        deleteSection: async (parent, values, context) =>
+            sections.delete(context.request, values.sectionId),
     },
+    Query: {
+        // Course
 
+        getCourses: async (parent, values, context) =>
+            courses.list(context.request, values, true),
+
+        getCourseById: async (parent, values, context) => {
+            const result = await courses.getById(
+                context.request,
+                values.courseId
+            );
+            return result;
+        },
+
+        // Chapter
+
+        getChapters: async (parent, values, context) =>
+            chapters.list(context.request, values),
+
+        getChapterById: async (parent, values, context) =>
+            chapters.getById(context.request, values.chapterId),
+
+        // Section
+
+        getSections: async (parent, values, context) =>
+            sections.list(context.request, values),
+
+        getSectionById: async (parent, values, context) =>
+            sections.getById(context.request, values.sectionId),
+    },
     Course: {
         creator: async (parent, values, context) =>
             users.getById(context.request, parent.creator),
@@ -184,10 +193,12 @@ const attachRoutes = async (app) => {
     const server = new ApolloServer({
         typeDefs,
         resolvers,
+        context: (context) => ({ request: context.req }),
     });
     await server.start();
-    server.applyMiddleware({ app, path: "/graphql/v1/private" });
     app.use("/graphql/v1/private", jwtCheck);
+    app.use("/graphql/v1/private", requireRole(["regular"]));
+    server.applyMiddleware({ app, path: "/graphql/v1/private" });
 };
 
 module.exports = { attachRoutes };

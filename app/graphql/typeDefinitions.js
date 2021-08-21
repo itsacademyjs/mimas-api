@@ -111,6 +111,16 @@ const typeDefinitions = `
         createdAt: String!
         updatedAt: String!
     }
+
+    type CoursePage {
+        totalRecords: Int!
+        totalPages: Int!
+        previousPage: Int!
+        nextPage: Int!
+        hasPreviousPage: Boolean!
+        hasNextPage: Boolean!
+        records: [Course!]!
+    }
 `;
 
 module.exports = typeDefinitions;
