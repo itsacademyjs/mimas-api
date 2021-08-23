@@ -28,7 +28,7 @@ const resolvers = {
         },
 
         getCourseById: async (object, values, context) =>
-            courses.getById(context.request, values.id),
+            courses.getById(context.request, values.id, true),
 
         // Chapter
 

@@ -113,8 +113,6 @@ const list = async (context, parameters, privateRequest) => {
         },
     });
 
-    console.log("2", courses);
-
     return {
         totalRecords: courses.totalDocs,
         totalPages: courses.totalPages,
