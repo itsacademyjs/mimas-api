@@ -74,40 +74,24 @@ const courseSchema = new Schema(
             set: (value) => Math.round(value),
         },
         requirements: {
-            type: [
-                {
-                    type: String,
-                    maxlength: 512,
-                },
-            ],
-            default: [],
+            type: String,
+            maxlength: 512,
+            default: "",
         },
         objectives: {
-            type: [
-                {
-                    type: String,
-                    maxlength: 512,
-                },
-            ],
-            default: [],
+            type: String,
+            maxlength: 512,
+            default: "",
         },
         targets: {
-            type: [
-                {
-                    type: String,
-                    maxlength: 512,
-                },
-            ],
-            default: [],
+            type: String,
+            maxlength: 512,
+            default: "",
         },
         resources: {
-            type: [
-                {
-                    type: String,
-                    maxlength: 512,
-                },
-            ],
-            default: [],
+            type: String,
+            maxlength: 512,
+            default: "",
         },
         chapters: {
             type: [
