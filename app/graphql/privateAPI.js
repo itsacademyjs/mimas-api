@@ -17,11 +17,11 @@ const typeDefs = gql`
             linear: Boolean
             actualPrice: Float
             discountedPrice: Float
-            requirements: [String!]
-            objectives: [String!]
-            targets: [String!]
             chapters: [String!]
-            resources: [String!]
+            requirements: String
+            objectives: String
+            targets: String
+            resources: String
         ): Course!
         updateCourse(
             courseId: ID!
@@ -33,11 +33,11 @@ const typeDefs = gql`
             linear: Boolean
             actualPrice: Float
             discountedPrice: Float
-            requirements: [String!]
-            objectives: [String!]
-            targets: [String!]
             chapters: [String!]
-            resources: [String!]
+            requirements: String
+            objectives: String
+            targets: String
+            resources: String
         ): Course!
         publishCourse(courseId: ID!): Course!
         unpublishCourse(courseId: ID!): Course!

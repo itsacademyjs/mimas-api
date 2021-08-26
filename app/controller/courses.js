@@ -51,13 +51,13 @@ const courseSchema = joi.object({
     linear: joi.boolean(),
     actualPrice: joi.number().integer(),
     discountedPrice: joi.number().integer(),
-    requirements: joi.array().items(joi.string().max(512)),
-    objectives: joi.array().items(joi.string().max(512)),
-    targets: joi.array().items(joi.string().max(512)),
+    requirements: joi.string().max(512),
+    objectives: joi.string().max(512),
+    targets: joi.string().max(512),
+    resources: joi.string().max(512),
     chapters: joi
         .array()
         .items(joi.string().regex(constants.identifierPattern)),
-    resources: joi.array().items(joi.string().max(512)),
 });
 
 const create = async (context, attributes) => {

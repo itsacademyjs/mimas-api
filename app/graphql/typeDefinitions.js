@@ -102,10 +102,10 @@ const typeDefinitions = `
         linear: Boolean!
         actualPrice: Float!
         discountedPrice: Float!
-        requirements: [String!]!
-        objectives: [String!]!
-        targets: [String!]!
-        resources: [String!]!
+        requirements: String
+        objectives: String
+        targets: String
+        resources: String
         chapters: [Chapter!]!
         status: CourseStatus
         createdAt: String!
