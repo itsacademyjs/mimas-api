@@ -51,10 +51,10 @@ const courseSchema = joi.object({
     linear: joi.boolean(),
     actualPrice: joi.number().integer(),
     discountedPrice: joi.number().integer(),
-    requirements: joi.string().max(512).allow(""),
-    objectives: joi.string().max(512).allow(""),
-    targets: joi.string().max(512).allow(""),
-    resources: joi.string().max(512).allow(""),
+    requirements: joi.string().max(2048).allow(""),
+    objectives: joi.string().max(2048).allow(""),
+    targets: joi.string().max(2048).allow(""),
+    resources: joi.string().max(2048).allow(""),
     chapters: joi
         .array()
         .items(joi.string().regex(constants.identifierPattern)),

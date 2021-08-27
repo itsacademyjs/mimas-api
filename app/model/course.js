@@ -75,22 +75,22 @@ const courseSchema = new Schema(
         },
         requirements: {
             type: String,
-            maxlength: 512,
+            maxlength: 2048,
             default: "",
         },
         objectives: {
             type: String,
-            maxlength: 512,
+            maxlength: 2048,
             default: "",
         },
         targets: {
             type: String,
-            maxlength: 512,
+            maxlength: 2048,
             default: "",
         },
         resources: {
             type: String,
-            maxlength: 512,
+            maxlength: 2048,
             default: "",
         },
         chapters: {
