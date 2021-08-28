@@ -139,7 +139,7 @@ const resolvers = {
             sections.unpublish(context.request, values.sectionId),
 
         deleteSection: async (parent, values, context) =>
-            sections.delete(context.request, values.sectionId),
+            sections.remove(context.request, values.sectionId),
     },
     Query: {
         // Course

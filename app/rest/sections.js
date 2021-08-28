@@ -61,7 +61,7 @@ const attachRoutes = (router) => {
     router.delete(
         "/sections/:sectionId",
         asyncMiddleware(async (request, response) => {
-            await sections.delete(request, request.params.sectionId);
+            await sections.remove(request, request.params.sectionId);
             response.status(httpStatus.OK).json({
                 success: true,
             });
