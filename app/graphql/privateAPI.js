@@ -105,7 +105,7 @@ const resolvers = {
             courses.unpublish(context.request, values.courseId),
 
         deleteCourse: async (parent, values, context) =>
-            courses.delete(context.request, values.courseId),
+            courses.remove(context.request, values.courseId),
 
         // Chapter
 
@@ -122,7 +122,7 @@ const resolvers = {
             chapters.unpublish(context.request, values.chapterId),
 
         deleteChapter: async (parent, values, context) =>
-            chapters.delete(context.request, values.chapterId),
+            chapters.remove(context.request, values.chapterId),
 
         // Section
 

@@ -13,7 +13,6 @@ const toExternal = (section) => ({
     title: section.title,
     type: section.type,
     description: section.description,
-    brief: section.brief,
     chapter: section.chapter,
     creator: section.creator,
     slug: section.slug,
@@ -31,7 +30,6 @@ const createSchema = joi.object({
         .required(true),
     chapter: joi.string().regex(constants.identifierPattern).required(true),
     description: joi.string().allow("").max(1024),
-    brief: joi.string().allow("").max(160),
 });
 
 // NOTE: The section type cannot be updated once created.
@@ -39,7 +37,6 @@ const createSchema = joi.object({
 const updateSchema = joi.object({
     title: joi.string().min(8).max(504),
     description: joi.string().allow("").max(1024),
-    brief: joi.string().allow("").max(160),
     content: joi.string().allow("").max(10240),
 });
 
@@ -110,11 +107,13 @@ const getById = async (context, sectionId) => {
 const list = async (context, sectionIds) => {
     const unorderedSections = await Section.find({
         _id: { $in: sectionIds },
+        status: { $ne: "deleted " },
     }).exec();
     const object = {};
-    unorderedSections.forEach((item) => {
-        object[item._id] = item;
-    });
+    // eslint-disable-next-line no-restricted-syntax
+    for (const section of unorderedSections) {
+        object[section._id] = section;
+    }
     // eslint-disable-next-line security/detect-object-injection
     const result = sectionIds.map((key) => object[key]);
     return result;
@@ -249,6 +248,10 @@ const remove = async (context, sectionId) => {
                 lean: true,
             }
         );
+
+        if (!section) {
+            return null;
+        }
 
         await Chapter.findOneAndUpdate(
             {

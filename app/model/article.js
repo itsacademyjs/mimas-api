@@ -19,12 +19,6 @@ const articleSchema = new Schema(
             required: true,
             trim: true,
         },
-        brief: {
-            type: String,
-            maxlength: 160,
-            required: true,
-            trim: true,
-        },
         content: {
             type: String,
             maxlength: 10240,

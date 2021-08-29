@@ -18,13 +18,7 @@ const chapterSchema = new Schema(
             type: String,
             maxlength: 1024,
             trim: true,
-            default: null,
-        },
-        brief: {
-            type: String,
-            maxlength: 160,
-            trim: true,
-            default: null,
+            default: "",
         },
         course: {
             type: Schema.Types.ObjectId,

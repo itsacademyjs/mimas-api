@@ -67,7 +67,6 @@ const typeDefinitions = `
         title: String!
         type: SectionType!
         description: String
-        brief: String
         content: String
         chapter: Chapter!
         creator: User!
@@ -79,7 +78,6 @@ const typeDefinitions = `
         id: ID!
         title: String!
         description: String
-        brief: String
         course: Course!
         creator: User!
         slug: String!
@@ -93,7 +91,6 @@ const typeDefinitions = `
         id: ID!
         title: String
         description: String
-        brief: String
         level: CourseLevel!
         creator: User!
         slug: String!

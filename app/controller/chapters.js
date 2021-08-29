@@ -4,7 +4,7 @@ const slugify = require("slugify");
 
 const constants = require("../util/constants");
 const { BadRequestError, NotFoundError, runAsTransaction } = require("../util");
-const { Chapter, Course } = require("../model");
+const { Chapter, Course, Section } = require("../model");
 
 const { Types } = mongoose;
 
@@ -12,7 +12,6 @@ const toExternal = (chapter) => ({
     id: chapter._id,
     title: chapter.title,
     description: chapter.description,
-    brief: chapter.brief,
     course: chapter.course,
     creator: chapter.creator,
     slug: chapter.slug,
@@ -24,7 +23,6 @@ const createSchema = joi.object({
     title: joi.string().min(16).max(504).required(true),
     course: joi.string().regex(constants.identifierPattern).required(true),
     description: joi.string().allow("").max(1024),
-    brief: joi.string().allow("").max(160),
     sections: joi
         .array()
         .items(joi.string().regex(constants.identifierPattern)),
@@ -33,7 +31,6 @@ const createSchema = joi.object({
 const updateSchema = joi.object({
     title: joi.string().min(16).max(504),
     description: joi.string().allow("").max(1024),
-    brief: joi.string().allow("").max(160),
     sections: joi
         .array()
         .items(joi.string().regex(constants.identifierPattern)),
@@ -74,8 +71,20 @@ const create = async (context, attributes) => {
     return toExternal(newChapter);
 };
 
-const list = async (context, chapterIds) =>
-    Chapter.find({ _id: { $in: chapterIds } }).exec();
+const list = async (context, chapterIds) => {
+    const unorderedChapters = await Chapter.find({
+        _id: { $in: chapterIds },
+        status: { $ne: "deleted" },
+    }).exec();
+    const object = {};
+    // eslint-disable-next-line no-restricted-syntax
+    for (const section of unorderedChapters) {
+        object[section._id] = section;
+    }
+    // eslint-disable-next-line security/detect-object-injection
+    const result = chapterIds.map((key) => object[key]);
+    return result;
+};
 
 const getById = async (context, chapterId) => {
     if (!constants.identifierPattern.test(chapterId)) {
@@ -84,7 +93,7 @@ const getById = async (context, chapterId) => {
         );
     }
 
-    const filters = { _id: chapterId };
+    const filters = { _id: chapterId, status: { $ne: "deleted" } };
     const chapter = await Chapter.findOne(filters).exec();
 
     /* We return a 404 error:
@@ -106,7 +115,7 @@ const getById = async (context, chapterId) => {
 };
 
 const getBySlug = async (context, slug) => {
-    const filters = { slug };
+    const filters = { slug, status: { $ne: "deleted " } };
     const chapter = await Chapter.findOne(filters).exec();
 
     /* We return a 404 error:
@@ -146,6 +155,7 @@ const update = async (context, chapterId, attributes) => {
         {
             _id: chapterId,
             creator: context.user._id,
+            status: { $ne: "deleted" },
         },
         value,
         {
@@ -171,7 +181,11 @@ const publish = async (context, chapterId) => {
     }
 
     const chapter = await Chapter.findOneAndUpdate(
-        { _id: chapterId, creator: context.user._id },
+        {
+            _id: chapterId,
+            creator: context.user._id,
+            status: { $ne: "deleted " },
+        },
         {
             status: "public",
         },
@@ -198,7 +212,11 @@ const unpublish = async (context, chapterId) => {
     }
 
     const chapter = await Chapter.findOneAndUpdate(
-        { _id: chapterId, creator: context.user._id },
+        {
+            _id: chapterId,
+            creator: context.user._id,
+            status: { $ne: "deleted " },
+        },
         {
             status: "private",
         },
@@ -217,6 +235,75 @@ const unpublish = async (context, chapterId) => {
     return toExternal(chapter);
 };
 
+/**
+ * When a chapter is deleted, all the sections associated with it are marked as deleted.
+ * We unlink the chapter from the course, but do not unlink sections from the chapter.
+ * The idea is to break links backwards, rather than forwards.
+ */
+const remove = async (context, chapterId) => {
+    if (!constants.identifierPattern.test(chapterId)) {
+        throw new BadRequestError(
+            "The specified chapter identifier is invalid."
+        );
+    }
+
+    const result = runAsTransaction(async () => {
+        const chapter = await Chapter.findOneAndUpdate(
+            {
+                _id: chapterId,
+                creator: context.user._id,
+                status: { $ne: "deleted " },
+            },
+            {
+                status: "deleted",
+            },
+            {
+                new: true,
+                lean: true,
+            }
+        );
+
+        if (!chapter) {
+            return null;
+        }
+
+        await Section.updateMany(
+            {
+                chapter: chapter._id,
+                creator: context.user._id,
+            },
+            {
+                status: "deleted",
+            },
+            {
+                new: true,
+                lean: true,
+            }
+        );
+
+        await Course.findOneAndUpdate(
+            {
+                _id: chapter.course,
+            },
+            {
+                $pull: {
+                    chapters: chapterId,
+                },
+            }
+        );
+
+        return chapter;
+    });
+
+    if (!result) {
+        throw new NotFoundError(
+            "A chapter with the specified identifier does not exist."
+        );
+    }
+
+    return true;
+};
+
 module.exports = {
     create,
     list,
@@ -225,4 +312,5 @@ module.exports = {
     update,
     publish,
     unpublish,
+    remove,
 };

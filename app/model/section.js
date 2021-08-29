@@ -26,16 +26,10 @@ const sectionSchema = new Schema(
             default: "",
             trim: true,
         },
-        brief: {
-            type: String,
-            maxlength: 160,
-            default: "",
-            trim: true,
-        },
         content: {
             type: String,
             maxlength: 10240,
-            default: null,
+            default: "",
             trim: true,
         },
         chapter: {
