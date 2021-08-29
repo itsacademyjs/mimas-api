@@ -3,8 +3,8 @@ const joi = require("joi");
 const slugify = require("slugify");
 
 const constants = require("../util/constants");
-const { BadRequestError, NotFoundError } = require("../util");
-const { Course } = require("../model");
+const { BadRequestError, NotFoundError, runAsTransaction } = require("../util");
+const { Course, Chapter, Section } = require("../model");
 
 const { Types } = mongoose;
 
@@ -12,7 +12,6 @@ const toExternal = (course) => ({
     id: course._id.toString(),
     title: course.title,
     description: course.description,
-    brief: course.brief,
     level: course.level,
     creator: course.creator,
     slug: course.slug,
@@ -44,7 +43,6 @@ const filterSchema = joi.object({
 const courseSchema = joi.object({
     title: joi.string().max(504).allow(""),
     description: joi.string().max(1024).allow(""),
-    brief: joi.string().max(160).allow(""),
     level: joi.string().valid(...constants.courseLevels),
     imageURL: joi.string().allow(""),
     languageCode: joi.string().valid(...constants.languageCodes),
@@ -97,8 +95,24 @@ const list = async (context, parameters, privateRequest) => {
 
     const filters = {
         ...(privateRequest
-            ? { creator: context.user._id }
-            : { status: "public" }),
+            ? {
+                  creator: context.user._id,
+                  status: {
+                      $ne: "deleted",
+                  },
+              }
+            : {
+                  $and: [
+                      {
+                          status: "public",
+                      },
+                      {
+                          status: {
+                              $ne: "deleted",
+                          },
+                      },
+                  ],
+              }),
     };
     const { page, limit } = value;
 
@@ -136,10 +150,9 @@ const getById = async (context, courseId, onlyPublished) => {
         ...(onlyPublished
             ? { status: "public" }
             : { creator: context.user._id }),
+        status: { $ne: "deleted " },
     };
     const course = await Course.findOne(filters).exec();
-
-    console.log(course);
 
     /* We return a 404 error:
      * 1. If we did not find the course.
@@ -174,6 +187,7 @@ const update = async (context, courseId, attributes) => {
         {
             _id: courseId,
             creator: context.user._id,
+            status: { $ne: "deleted " },
         },
         value,
         {
@@ -199,7 +213,11 @@ const publish = async (context, courseId) => {
     }
 
     const course = await Course.findOneAndUpdate(
-        { _id: courseId, creator: context.user._id },
+        {
+            _id: courseId,
+            creator: context.user._id,
+            status: { $ne: "deleted " },
+        },
         {
             status: "public",
         },
@@ -226,7 +244,11 @@ const unpublish = async (context, courseId) => {
     }
 
     const course = await Course.findOneAndUpdate(
-        { _id: courseId, creator: context.user._id },
+        {
+            _id: courseId,
+            creator: context.user._id,
+            status: { $ne: "deleted " },
+        },
         {
             status: "private",
         },
@@ -245,6 +267,84 @@ const unpublish = async (context, courseId) => {
     return toExternal(course);
 };
 
+/**
+ * When a course is deleted, all the chapters and sections associated with it are marked
+ * as deleted. However, we do not unlink sections from chapters, and chapters from courses.
+ * The idea is to break links backwards, rather than forwards.
+ */
+const remove = async (context, courseId) => {
+    if (!constants.identifierPattern.test(courseId)) {
+        throw new BadRequestError(
+            "The specified course identifier is invalid."
+        );
+    }
+
+    const result = runAsTransaction(async () => {
+        const course = await Course.findOneAndUpdate(
+            {
+                _id: courseId,
+                creator: context.user._id,
+                status: {
+                    $ne: "deleted",
+                },
+            },
+            {
+                status: "deleted",
+            },
+            {
+                new: true,
+                lean: true,
+            }
+        );
+
+        if (!course) {
+            return null;
+        }
+
+        await Chapter.updateMany(
+            {
+                _id: {
+                    $in: course.chapters,
+                },
+                creator: context.user._id,
+            },
+            {
+                status: "deleted",
+            },
+            {
+                new: true,
+                lean: true,
+            }
+        );
+
+        await Section.updateMany(
+            {
+                chapter: {
+                    $in: course.chapters,
+                },
+                creator: context.user._id,
+            },
+            {
+                status: "deleted",
+            },
+            {
+                new: true,
+                lean: true,
+            }
+        );
+
+        return course;
+    });
+
+    if (!result) {
+        throw new NotFoundError(
+            "A course with the specified identifier does not exist."
+        );
+    }
+
+    return true;
+};
+
 module.exports = {
     create,
     list,
@@ -252,4 +352,5 @@ module.exports = {
     update,
     publish,
     unpublish,
+    remove,
 };

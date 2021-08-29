@@ -12,7 +12,6 @@ const toExternal = (article) => ({
     id: article._id,
     title: article.title,
     description: article.description,
-    brief: article.brief,
     content: article.content,
     author: article.author,
     slug: article.slug,
@@ -36,7 +35,6 @@ const filterSchema = joi.object({
 const articleSchema = joi.object({
     title: joi.string().min(10).max(256).required(true),
     description: joi.string().max(1024).required(true),
-    brief: joi.string().max(160).required(true),
     content: joi.string().max(10240).required(true),
     imageURL: joi.string(),
     languageCode: joi

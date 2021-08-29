@@ -14,19 +14,13 @@ const courseSchema = new Schema(
         title: {
             type: String,
             maxlength: 504,
-            default: null,
+            default: "",
             trim: true,
         },
         description: {
             type: String,
             maxlength: 1024,
-            default: null,
-            trim: true,
-        },
-        brief: {
-            type: String,
-            maxlength: 160,
-            default: null,
+            default: "",
             trim: true,
         },
         level: {
