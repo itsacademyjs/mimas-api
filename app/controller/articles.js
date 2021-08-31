@@ -3,7 +3,7 @@ const joi = require("joi");
 const slugify = require("slugify");
 
 const constants = require("../util/constants");
-const { BadRequestError, NotFoundError } = require("../util");
+const { BadRequestError, NotFoundError, runAsTransaction } = require("../util");
 const { Article } = require("../model");
 
 const { Types } = mongoose;
@@ -32,34 +32,37 @@ const filterSchema = joi.object({
         .default(constants.paginateMinLimit),
 });
 
-const articleSchema = joi.object({
-    title: joi.string().min(10).max(256).required(true),
-    description: joi.string().max(1024).required(true),
-    content: joi.string().max(10240).required(true),
-    imageURL: joi.string(),
-    languageCode: joi
-        .string()
-        .valid(...constants.languageCodes)
-        .default("en"),
+const createSchema = joi.object({
+    title: joi.string().max(256).allow(""),
+    description: joi.string().max(1024).allow(""),
+    content: joi.string().max(10240).allow(""),
+    imageURL: joi.string().allow(""),
+    languageCode: joi.string().valid(...constants.languageCodes),
+});
+
+const updateSchema = joi.object({
+    title: joi.string().min(8).max(256).allow(""),
+    description: joi.string().max(1024).allow(""),
+    content: joi.string().max(10240).allow(""),
+    imageURL: joi.string().allow(""),
+    languageCode: joi.string().valid(...constants.languageCodes),
 });
 
 const create = async (context, attributes) => {
-    const { error, value } = articleSchema.validate(attributes);
+    const { error, value } = createSchema.validate(attributes);
 
     if (error) {
         throw new BadRequestError(error.message);
     }
 
-    /* Once a slug is generated, it cannot be updated because
-     * external entities such as files on Google Cloud Storage
-     * are named using slugs.
-     */
     const id = new Types.ObjectId();
-    const slug = `${slugify(value.title, {
-        replacement: "-",
-        lower: true,
-        strict: true,
-    })}-${id.toString()}`;
+    const slug = value.title
+        ? `${slugify(value.title, {
+              replacement: "-",
+              lower: true,
+              strict: true,
+          })}-${id.toString()}`
+        : id.toString();
     const newArticle = new Article({
         _id: id,
         ...value,
@@ -71,15 +74,32 @@ const create = async (context, attributes) => {
     return toExternal(newArticle);
 };
 
-const list = async (context, parameters, status) => {
+const list = async (context, parameters, publicAPI) => {
     const { error, value } = filterSchema.validate(parameters);
     if (error) {
         throw new BadRequestError(error.message);
     }
 
     const filters = {
-        /* Anything other than published article requires the user to be the owner. */
-        ...(status !== "public" ? { author: context.user._id } : {}),
+        ...(publicAPI
+            ? {
+                  $and: [
+                      {
+                          status: "public",
+                      },
+                      {
+                          status: {
+                              $ne: "deleted",
+                          },
+                      },
+                  ],
+              }
+            : {
+                  author: context.user._id,
+                  status: {
+                      $ne: "deleted",
+                  },
+              }),
     };
     const { page, limit } = value;
 
@@ -105,14 +125,18 @@ const list = async (context, parameters, status) => {
     };
 };
 
-const getById = async (context, articleId) => {
+const getById = async (context, articleId, publicAPI) => {
     if (!constants.identifierPattern.test(articleId)) {
         throw new BadRequestError(
             "The specified article identifier is invalid."
         );
     }
 
-    const filters = { _id: articleId };
+    const filters = {
+        _id: articleId,
+        ...(publicAPI ? { status: "public" } : { author: context.user._id }),
+        status: { $ne: "deleted " },
+    };
     const article = await Article.findOne(filters).exec();
 
     /* We return a 404 error:
@@ -133,8 +157,12 @@ const getById = async (context, articleId) => {
     return toExternal(article);
 };
 
-const getBySlug = async (context, slug) => {
-    const filters = { slug };
+const getBySlug = async (context, slug, publicAPI) => {
+    const filters = {
+        slug,
+        ...(publicAPI ? { status: "public" } : { author: context.user._id }),
+        status: { $ne: "deleted " },
+    };
     const article = await Article.findOne(filters).exec();
 
     /* We return a 404 error:
@@ -162,16 +190,18 @@ const update = async (context, articleId, attributes) => {
         );
     }
 
-    const { error, value } = articleSchema.validate(attributes);
-
+    const { error, value } = updateSchema.validate(attributes, {
+        stripUnknown: true,
+    });
     if (error) {
         throw new BadRequestError(error.message);
     }
 
     const article = await Article.findOneAndUpdate(
         {
-            _id: new Types.ObjectId(articleId),
+            _id: articleId,
             author: context.user._id,
+            status: { $ne: "deleted" },
         },
         value,
         {
@@ -197,21 +227,26 @@ const publish = async (context, articleId) => {
         );
     }
 
-    const article = await Article.findOne({
-        _id: articleId,
-        author: context.user._id,
-    }).exec();
+    const article = await Article.findOneAndUpdate(
+        {
+            _id: articleId,
+            author: context.user._id,
+            status: { $ne: "deleted" },
+        },
+        {
+            status: "public",
+        },
+        {
+            new: true,
+            lean: true,
+        }
+    );
 
     if (!article) {
         throw new NotFoundError(
             "An article with the specified identifier does not exist."
         );
     }
-
-    // TODO: Check if we can make the article public.
-
-    article.status = "public";
-    await article.save();
 
     return toExternal(article);
 };
@@ -224,7 +259,11 @@ const unpublish = async (context, articleId) => {
     }
 
     const article = await Article.findOneAndUpdate(
-        { _id: articleId, author: context.user._id },
+        {
+            _id: articleId,
+            author: context.user._id,
+            status: { $ne: "deleted " },
+        },
         {
             status: "private",
         },
@@ -243,6 +282,42 @@ const unpublish = async (context, articleId) => {
     return toExternal(article);
 };
 
+const remove = async (context, articleId) => {
+    if (!constants.identifierPattern.test(articleId)) {
+        throw new BadRequestError(
+            "The specified article identifier is invalid."
+        );
+    }
+
+    const result = runAsTransaction(async () => {
+        const article = await Article.findOneAndUpdate(
+            {
+                _id: articleId,
+                author: context.user._id,
+                status: {
+                    $ne: "deleted",
+                },
+            },
+            {
+                status: "deleted",
+            },
+            {
+                new: true,
+                lean: true,
+            }
+        );
+        return article;
+    });
+
+    if (!result) {
+        throw new NotFoundError(
+            "An article with the specified identifier does not exist."
+        );
+    }
+
+    return true;
+};
+
 module.exports = {
     create,
     list,
@@ -251,4 +326,5 @@ module.exports = {
     update,
     publish,
     unpublish,
+    remove,
 };

@@ -8,6 +8,7 @@ const {
     chapterStatuses,
     sectionTypes,
     sectionStatuses,
+    articleStatuses,
 } = require("../util/constants");
 
 const typeDefinitions = `
@@ -45,6 +46,10 @@ const typeDefinitions = `
 
     enum SectionStatus {
         ${sectionStatuses.join("\n")}
+    }
+
+    enum ArticleStatus {
+        ${articleStatuses.join("\n")}
     }
 
     type User {
@@ -117,6 +122,28 @@ const typeDefinitions = `
         hasPreviousPage: Boolean!
         hasNextPage: Boolean!
         records: [Course!]!
+    }
+
+    type Article {
+        id: ID!
+        title: String
+        description: String
+        content: String
+        author: User!
+        slug: String
+        imageURL: String
+        languageCode: Language!
+        status: ArticleStatus!
+    }
+
+    type ArticlePage {
+        totalRecords: Int!
+        totalPages: Int!
+        previousPage: Int!
+        nextPage: Int!
+        hasPreviousPage: Boolean!
+        hasNextPage: Boolean!
+        records: [Article!]!
     }
 `;
 

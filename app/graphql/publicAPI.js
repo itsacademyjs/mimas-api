@@ -1,20 +1,30 @@
 const { ApolloServer, gql } = require("apollo-server-express");
 
 const types = require("./typeDefinitions");
-const { courses, chapters, sections, users } = require("../controller");
+const {
+    courses,
+    chapters,
+    sections,
+    users,
+    articles,
+} = require("../controller");
 
 const typeDefs = gql`
     ${types}
 
     type Query {
         getCourses(page: Int, limit: Int): CoursePage!
-        getCourseById(id: ID!): Course!
+        getCourseById(courseId: ID!): Course!
 
         getChapters(courseId: ID!, page: Int, limit: Int): [Chapter!]!
-        getChapterById(id: ID!): Chapter!
+        getChapterById(chapterId: ID!): Chapter!
 
         getSections(chapterId: ID!, page: Int, limit: Int): [Section!]!
-        getSectionById(id: ID!): Section!
+        getSectionById(sectionId: ID!): Section!
+
+        getArticles(page: Int, limit: Int): ArticlePage!
+        getArticleById(articleId: ID!): Article!
+        getArticleBySlug(slug: String): Article!
     }
 `;
 
@@ -28,7 +38,7 @@ const resolvers = {
         },
 
         getCourseById: async (object, values, context) =>
-            courses.getById(context.request, values.id, true),
+            courses.getById(context.request, values.courseId, true),
 
         // Chapter
 
@@ -36,7 +46,7 @@ const resolvers = {
             chapters.list(context.request, values),
 
         getChapterById: async (object, values, context) =>
-            chapters.getById(context.request, values.id),
+            chapters.getById(context.request, values.chapterId),
 
         // Section
 
@@ -44,7 +54,18 @@ const resolvers = {
             sections.list(context.request, values),
 
         getSectionById: async (object, values, context) =>
-            sections.getById(context.request, values.id),
+            sections.getById(context.request, values.sectionId),
+
+        // Article
+
+        getArticles: async (object, values, context) =>
+            articles.list(context.request, values, true),
+
+        getArticleById: async (object, values, context) =>
+            articles.getById(context.request, values.articleId, true),
+
+        getArticleBySlug: async (object, values, context) =>
+            articles.getBySlug(context.request, values.slug, true),
     },
     Course: {
         creator: async (parent, values, context) =>

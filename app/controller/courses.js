@@ -150,7 +150,7 @@ const getById = async (context, courseId, onlyPublished) => {
         ...(onlyPublished
             ? { status: "public" }
             : { creator: context.user._id }),
-        status: { $ne: "deleted " },
+        status: { $ne: "deleted" },
     };
     const course = await Course.findOne(filters).exec();
 
@@ -159,7 +159,10 @@ const getById = async (context, courseId, onlyPublished) => {
      * 2. Or, we found the course, but the current user does not own,
      *    and it is unpublished.
      */
-    if (!course) {
+    if (
+        !course ||
+        (course.status !== "public" && !course.creator.equals(context.user._id))
+    ) {
         throw new NotFoundError(
             "Cannot find a course with the specified identifier."
         );
@@ -187,7 +190,7 @@ const update = async (context, courseId, attributes) => {
         {
             _id: courseId,
             creator: context.user._id,
-            status: { $ne: "deleted " },
+            status: { $ne: "deleted" },
         },
         value,
         {
@@ -216,7 +219,7 @@ const publish = async (context, courseId) => {
         {
             _id: courseId,
             creator: context.user._id,
-            status: { $ne: "deleted " },
+            status: { $ne: "deleted" },
         },
         {
             status: "public",
@@ -247,7 +250,7 @@ const unpublish = async (context, courseId) => {
         {
             _id: courseId,
             creator: context.user._id,
-            status: { $ne: "deleted " },
+            status: { $ne: "deleted" },
         },
         {
             status: "private",

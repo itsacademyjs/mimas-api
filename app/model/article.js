@@ -8,21 +8,19 @@ const articleSchema = new Schema(
     {
         title: {
             type: String,
-            minlength: 10,
             maxlength: 256,
-            required: true,
+            default: "",
             trim: true,
         },
         description: {
             type: String,
             maxlength: 1024,
-            required: true,
             trim: true,
         },
         content: {
             type: String,
             maxlength: 10240,
-            required: true,
+            default: "",
             trim: true,
         },
         author: {
@@ -33,7 +31,6 @@ const articleSchema = new Schema(
         slug: {
             type: String,
             trim: true,
-            unique: true,
             required: true,
         },
         imageURL: {
