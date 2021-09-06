@@ -1,7 +1,13 @@
 const { ApolloServer, gql } = require("apollo-server-express");
 
 const types = require("./typeDefinitions");
-const { courses, chapters, sections, users } = require("../controller");
+const {
+    courses,
+    chapters,
+    sections,
+    users,
+    articles,
+} = require("../controller");
 const { jwtCheck, requireRole } = require("../middleware");
 
 const typeDefs = gql`
@@ -74,6 +80,25 @@ const typeDefs = gql`
         publishSection(sectionId: ID!): Section!
         unpublishSection(sectionId: ID!): Section!
         deleteSection(sectionId: ID!): Boolean!
+
+        createArticle(
+            title: String
+            description: String
+            content: String
+            imageURL: String
+            languageCode: Language
+        ): Article!
+        updateArticle(
+            articleId: ID!
+            title: String
+            description: String
+            content: String
+            imageURL: String
+            languageCode: Language
+        ): Article!
+        publishArticle(articleId: ID!): Section!
+        unpublishArticle(articleId: ID!): Section!
+        deleteArticle(articleId: ID!): Boolean!
     }
 
     type Query {
@@ -85,6 +110,10 @@ const typeDefs = gql`
 
         getSections(chapterId: ID!, page: Int, limit: Int): [Section!]!
         getSectionById(sectionId: ID!): Section!
+
+        getArticles(page: Int, limit: Int): ArticlePage!
+        getArticleById(articleId: ID!): Article!
+        getArticleBySlug(slug: String): Article!
     }
 `;
 
@@ -140,6 +169,23 @@ const resolvers = {
 
         deleteSection: async (parent, values, context) =>
             sections.remove(context.request, values.sectionId),
+
+        // Article
+
+        createArticle: async (parent, values, context) =>
+            articles.create(context.request, values),
+
+        updateArticle: async (parent, values, context) =>
+            articles.update(context.request, values.articleId, values),
+
+        publishArticle: async (parent, values, context) =>
+            articles.publish(context.request, values.articleId),
+
+        unpublishArticle: async (parent, values, context) =>
+            articles.unpublish(context.request, values.articleId),
+
+        deleteArticle: async (parent, values, context) =>
+            articles.remove(context.request, values.articleId),
     },
     Query: {
         // Course
@@ -170,6 +216,17 @@ const resolvers = {
 
         getSectionById: async (parent, values, context) =>
             sections.getById(context.request, values.sectionId),
+
+        // Article
+
+        getArticles: async (object, values, context) =>
+            articles.list(context.request, values, true),
+
+        getArticleById: async (object, values, context) =>
+            articles.getById(context.request, values.articleId, true),
+
+        getArticleBySlug: async (object, values, context) =>
+            articles.getBySlug(context.request, values.slug, true),
     },
     Course: {
         creator: async (parent, values, context) =>
