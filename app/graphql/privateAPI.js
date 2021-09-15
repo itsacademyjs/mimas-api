@@ -68,7 +68,7 @@ const typeDefs = gql`
         createSection(
             title: String
             type: SectionType!
-            chapter: String!
+            chapter: ID!
             description: String
         ): Section!
         updateSection(
@@ -76,6 +76,7 @@ const typeDefs = gql`
             title: String
             description: String
             content: String
+            questions: [QuestionInput!]
         ): Section!
         publishSection(sectionId: ID!): Section!
         unpublishSection(sectionId: ID!): Section!

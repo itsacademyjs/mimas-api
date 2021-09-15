@@ -18,6 +18,14 @@ const toExternal = (section) => ({
     slug: section.slug,
     status: section.status,
     content: section.content,
+    questions: section.questions?.map((question) => ({
+        text: question.text,
+        type: question.type,
+        options: question.options.map((option) => ({
+            text: option.text,
+            correct: option.correct,
+        })),
+    })),
     createdAt: section.createdAt.toISOString(),
     updatedAt: section.updatedAt.toISOString(),
 });
@@ -38,6 +46,24 @@ const updateSchema = joi.object({
     title: joi.string().min(8).max(504),
     description: joi.string().allow("").max(1024),
     content: joi.string().allow("").max(10240),
+    questions: joi.array().items(
+        joi.object({
+            text: joi.string().allow("").max(1024).required(true),
+            type: joi
+                .string()
+                .valid(...constants.questionTypes)
+                .required(true),
+            options: joi
+                .array()
+                .items(
+                    joi.object({
+                        text: joi.string().allow("").max(256),
+                        correct: joi.boolean(),
+                    })
+                )
+                .required(true),
+        })
+    ),
 });
 
 const create = async (context, attributes) => {

@@ -5,6 +5,27 @@ const { sectionStatuses, sectionTypes } = require("../util/constants");
 
 const { Schema } = mongoose;
 
+const optionSchema = new Schema({
+    text: {
+        type: String,
+        trim: true,
+        default: "",
+    },
+    correct: {
+        type: Boolean,
+        default: false,
+    },
+});
+
+const questionSchema = new Schema({
+    text: String,
+    type: {
+        type: String,
+        enum: ["single-correct-option", "multiple-correct-options"],
+    },
+    options: [optionSchema],
+});
+
 const sectionSchema = new Schema(
     {
         title: {
@@ -52,6 +73,10 @@ const sectionSchema = new Schema(
             enum: sectionStatuses,
             default: "private",
             required: true,
+        },
+        questions: {
+            type: [questionSchema],
+            default: null,
         },
     },
     { timestamps: true }
