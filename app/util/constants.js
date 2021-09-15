@@ -272,7 +272,15 @@ const sectionStatuses = ["public", "private", "deleted", "archieved", "banned"];
 
 const courseLevels = ["beginner", "intermediate", "expert", "all_levels"];
 
-const sectionTypes = ["video", "article", "coding_excercise", "assignment"];
+const sectionTypes = [
+    "video",
+    "article",
+    "quiz",
+    "coding_excercise",
+    "assignment",
+];
+
+const questionTypes = ["single_correct_option", "multiple_correct_options"];
 
 module.exports = {
     paginateMaxLimit,
@@ -289,4 +297,5 @@ module.exports = {
     sectionStatuses,
     courseLevels,
     sectionTypes,
+    questionTypes,
 };

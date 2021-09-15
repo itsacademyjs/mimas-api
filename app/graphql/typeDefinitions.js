@@ -9,6 +9,7 @@ const {
     sectionTypes,
     sectionStatuses,
     articleStatuses,
+    questionTypes,
 } = require("../util/constants");
 
 const typeDefinitions = `
@@ -67,12 +68,28 @@ const typeDefinitions = `
         status: UserStatus!
     }
 
+    enum QuestionType {
+        ${questionTypes.join("\n")}
+    }
+
+    type QuestionOption {
+        text: String!
+        correct: Boolean!
+    }
+
+    type Question {
+        text: String!
+        type: QuestionType!
+        options: [QuestionOption!]!
+    }
+
     type Section {
         id: ID!
         title: String!
         type: SectionType!
         description: String
         content: String
+        questions: [Question!]
         chapter: Chapter!
         creator: User!
         slug: String!
@@ -144,6 +161,17 @@ const typeDefinitions = `
         hasPreviousPage: Boolean!
         hasNextPage: Boolean!
         records: [Article!]!
+    }
+
+    input QuestionOptionInput {
+        text: String!
+        correct: Boolean!
+    }
+
+    input QuestionInput {
+        text: String!
+        type: QuestionType!
+        options: [QuestionOptionInput!]!
     }
 `;
 
