@@ -35,7 +35,7 @@ const filterSchema = joi.object({
 const createSchema = joi.object({
     title: joi.string().max(256).allow(""),
     description: joi.string().max(1024).allow(""),
-    content: joi.string().max(10240).allow(""),
+    content: joi.string().max(20480).allow(""),
     imageURL: joi.string().allow(""),
     languageCode: joi.string().valid(...constants.languageCodes),
 });
@@ -43,7 +43,7 @@ const createSchema = joi.object({
 const updateSchema = joi.object({
     title: joi.string().min(8).max(256).allow(""),
     description: joi.string().max(1024).allow(""),
-    content: joi.string().max(10240).allow(""),
+    content: joi.string().max(20480).allow(""),
     imageURL: joi.string().allow(""),
     languageCode: joi.string().valid(...constants.languageCodes),
 });

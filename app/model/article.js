@@ -19,7 +19,7 @@ const articleSchema = new Schema(
         },
         content: {
             type: String,
-            maxlength: 10240,
+            maxlength: 20480,
             default: "",
             trim: true,
         },
