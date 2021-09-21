@@ -115,7 +115,7 @@ const getById = async (context, chapterId) => {
 };
 
 const getBySlug = async (context, slug) => {
-    const filters = { slug, status: { $ne: "deleted " } };
+    const filters = { slug, status: { $ne: "deleted" } };
     const chapter = await Chapter.findOne(filters).exec();
 
     /* We return a 404 error:
@@ -184,7 +184,7 @@ const publish = async (context, chapterId) => {
         {
             _id: chapterId,
             creator: context.user._id,
-            status: { $ne: "deleted " },
+            status: { $ne: "deleted" },
         },
         {
             status: "public",
@@ -215,7 +215,7 @@ const unpublish = async (context, chapterId) => {
         {
             _id: chapterId,
             creator: context.user._id,
-            status: { $ne: "deleted " },
+            status: { $ne: "deleted" },
         },
         {
             status: "private",
@@ -252,7 +252,7 @@ const remove = async (context, chapterId) => {
             {
                 _id: chapterId,
                 creator: context.user._id,
-                status: { $ne: "deleted " },
+                status: { $ne: "deleted" },
             },
             {
                 status: "deleted",

@@ -133,7 +133,7 @@ const getById = async (context, sectionId) => {
 const list = async (context, sectionIds) => {
     const unorderedSections = await Section.find({
         _id: { $in: sectionIds },
-        status: { $ne: "deleted " },
+        status: { $ne: "deleted" },
     }).exec();
     const object = {};
     // eslint-disable-next-line no-restricted-syntax

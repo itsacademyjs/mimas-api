@@ -135,7 +135,7 @@ const getById = async (context, articleId, publicAPI) => {
     const filters = {
         _id: articleId,
         ...(publicAPI ? { status: "public" } : { author: context.user._id }),
-        status: { $ne: "deleted " },
+        status: { $ne: "deleted" },
     };
     const article = await Article.findOne(filters).exec();
 
@@ -161,7 +161,7 @@ const getBySlug = async (context, slug, publicAPI) => {
     const filters = {
         slug,
         ...(publicAPI ? { status: "public" } : { author: context.user._id }),
-        status: { $ne: "deleted " },
+        status: { $ne: "deleted" },
     };
     const article = await Article.findOne(filters).exec();
 
@@ -262,7 +262,7 @@ const unpublish = async (context, articleId) => {
         {
             _id: articleId,
             author: context.user._id,
-            status: { $ne: "deleted " },
+            status: { $ne: "deleted" },
         },
         {
             status: "private",
