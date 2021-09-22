@@ -221,13 +221,13 @@ const resolvers = {
         // Article
 
         getArticles: async (object, values, context) =>
-            articles.list(context.request, values, true),
+            articles.list(context.request, values, false),
 
         getArticleById: async (object, values, context) =>
-            articles.getById(context.request, values.articleId, true),
+            articles.getById(context.request, values.articleId, false),
 
         getArticleBySlug: async (object, values, context) =>
-            articles.getBySlug(context.request, values.slug, true),
+            articles.getBySlug(context.request, values.slug, false),
     },
     Course: {
         creator: async (parent, values, context) =>

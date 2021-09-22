@@ -102,6 +102,7 @@ const list = async (context, parameters, publicAPI) => {
               }),
     };
     const { page, limit } = value;
+    console.log(JSON.stringify(filters, null, 4));
 
     const articles = await Article.paginate(filters, {
         limit,
