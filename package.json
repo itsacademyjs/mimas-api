@@ -8,6 +8,7 @@
     },
     "scripts": {
         "watch": "tsc -w",
+        "build": "tsc",
         "start": "nodemon --exec \"eslint && node ./dist/app/start.js\"",
         "run": "node ./dist/app/start.js",
         "test": "mocha test --recursive"

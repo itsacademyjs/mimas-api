@@ -1,7 +1,7 @@
 FROM node:16
 
 # Create app directory
-WORKDIR /mimas/rest-api
+WORKDIR /mimas/api
 
 # Install app dependencies
 COPY package.json .
@@ -13,5 +13,7 @@ RUN rm -rf node_modules && yarn install --frozen-lockfile
 # Bundle app source
 COPY . .
 
+RUN [ "yarn", "build" ]
+
 EXPOSE 80
-CMD [ "node", "./app/start.js" ]
+CMD [ "yarn", "run" ]
