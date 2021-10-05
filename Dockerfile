@@ -16,4 +16,4 @@ COPY . .
 RUN [ "yarn", "build" ]
 
 EXPOSE 80
-CMD [ "yarn", "run" ]
+CMD [ "node", "./dist/app/start.js" ]
