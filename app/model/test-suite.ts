@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import paginate from "mongoose-paginate-v2";
 
 const testSchema = new Schema({
     title: {
@@ -39,8 +40,13 @@ const testSuiteSchema = new Schema(
         tags: {
             type: [String],
         },
+        status: {
+            type: String,
+        },
     },
     { timestamps: true }
 );
+
+testSuiteSchema.plugin(paginate);
 
 export default model("TestSuite", testSuiteSchema);
