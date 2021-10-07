@@ -2,7 +2,7 @@ import { Types } from "mongoose";
 import joi from "joi";
 
 import constants from "../util/constants";
-import { BadRequestError, NotFoundError } from "../util";
+import { BadRequestError, NotFoundError, escapeRegex } from "../util";
 import { TestSuite as TestSuiteModel } from "../model";
 import { ExternalTestSuite, TestSuite, Page, ListParameters } from "../types";
 
@@ -30,9 +30,10 @@ const filterSchema = joi.object({
         .min(constants.paginateMinLimit)
         .max(constants.paginateMaxLimit)
         .default(constants.paginateMinLimit),
+    search: joi.string().trim().allow(null).empty("").default(null),
 });
 
-const list = async (
+export const list = async (
     context,
     parameters: ListParameters
 ): Promise<Page<ExternalTestSuite>> => {
@@ -41,13 +42,19 @@ const list = async (
         throw new BadRequestError(error.message);
     }
 
-    const filters = {
+    const filters: any = {
         author: context.user._id,
         status: {
             $ne: "deleted",
         },
     };
-    const { page, limit } = value;
+    const { page, limit, search } = value;
+
+    if (search) {
+        /* eslint-disable-next-line security/detect-non-literal-regexp */
+        const regex = new RegExp(escapeRegex(search), "i");
+        filters.$or = [{ handle: regex }, { title: regex }];
+    }
 
     const testSuites = await (TestSuiteModel as any).paginate(filters, {
         limit,
@@ -71,7 +78,10 @@ const list = async (
     };
 };
 
-const getById = async (context, testSuiteId) => {
+export const getById = async (
+    context,
+    testSuiteId: string
+): Promise<ExternalTestSuite> => {
     if (!constants.identifierPattern.test(testSuiteId)) {
         throw new BadRequestError(
             "The specified test suite identifier is invalid."
@@ -97,5 +107,3 @@ const getById = async (context, testSuiteId) => {
 
     return toExternal(testSuite as unknown as TestSuite);
 };
-
-export { list, getById };

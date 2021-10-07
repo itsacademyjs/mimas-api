@@ -163,6 +163,31 @@ const typeDefinitions = `
         records: [Article!]!
     }
 
+    type TestCase {
+        id: String!
+        title: String!
+        description: String!
+    }
+
+    type TestSuite {
+        id: String!
+        title: String!
+        description: String!
+        handle: String!
+        tests: [TestCase!]!
+        tags: [String!]!
+    }
+
+    type TestSuitePage {
+        totalRecords: Int!
+        totalPages: Int!
+        previousPage: Int!
+        nextPage: Int!
+        hasPreviousPage: Boolean!
+        hasNextPage: Boolean!
+        records: [TestSuite!]!
+    }
+
     input QuestionOptionInput {
         text: String!
         correct: Boolean!
