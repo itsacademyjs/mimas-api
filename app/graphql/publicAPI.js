@@ -7,6 +7,7 @@ const {
     sections,
     users,
     articles,
+    testSuites,
 } = require("../controller");
 
 const typeDefs = gql`
@@ -25,6 +26,9 @@ const typeDefs = gql`
         getArticles(page: Int, limit: Int): ArticlePage!
         getArticleById(articleId: ID!): Article!
         getArticleBySlug(slug: String): Article!
+
+        getTestSuites(page: Int, limit: Int, search: String): TestSuitePage!
+        getTestSuiteById(testSuiteId: ID!): TestSuite!
     }
 `;
 
@@ -66,6 +70,16 @@ const resolvers = {
 
         getArticleBySlug: async (object, values, context) =>
             articles.getBySlug(context.request, values.slug, true),
+
+        getTestSuites: async (object, values, context) =>
+            testSuites.list(
+                context.request,
+                values.page,
+                values.limit,
+                values.search
+            ),
+        getTestSuiteById: async (object, values, context) =>
+            testSuites.getById(context.request, values.testSuiteId),
     },
     Course: {
         creator: async (parent, values, context) =>
