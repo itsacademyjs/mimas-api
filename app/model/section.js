@@ -78,6 +78,11 @@ const sectionSchema = new Schema(
             type: [questionSchema],
             default: null,
         },
+        exercise: {
+            type: Schema.Types.ObjectId,
+            ref: "TestSuite",
+            default: null,
+        },
     },
     { timestamps: true }
 );

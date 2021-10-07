@@ -2,9 +2,13 @@ const mongoose = require("mongoose");
 const joi = require("joi");
 const slugify = require("slugify");
 
-const constants = require("../util/constants");
 const { Section, Chapter } = require("../model");
-const { BadRequestError, NotFoundError, runAsTransaction } = require("../util");
+const {
+    BadRequestError,
+    NotFoundError,
+    runAsTransaction,
+    constants,
+} = require("../util");
 
 const { Types } = mongoose;
 
@@ -64,6 +68,7 @@ const updateSchema = joi.object({
                 .required(true),
         })
     ),
+    exercise: joi.string().regex(constants.identifierPattern),
 });
 
 const create = async (context, attributes) => {
