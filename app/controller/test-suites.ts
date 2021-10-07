@@ -4,26 +4,7 @@ import joi from "joi";
 import constants from "../util/constants";
 import { BadRequestError, NotFoundError } from "../util";
 import { TestSuite as TestSuiteModel } from "../model";
-
-interface ExternalTestSuite {
-    [key: string]: any;
-}
-
-interface TestCase {
-    _id: string | Types.ObjectId | undefined;
-    title: string;
-    description: string;
-}
-
-interface TestSuite {
-    _id: string | Types.ObjectId | undefined;
-    title: string;
-    description: string;
-    handle: string;
-    tests: TestCase[];
-    tags: string[];
-    status: string;
-}
+import { ExternalTestSuite, TestSuite, Page, ListParameters } from "../types";
 
 const toExternal = (testSuite: TestSuite): ExternalTestSuite => {
     const { _id: id, title, description, handle, tests, tags } = testSuite;
@@ -51,24 +32,9 @@ const filterSchema = joi.object({
         .default(constants.paginateMinLimit),
 });
 
-interface Parameters {
-    page: number;
-    limit: number;
-}
-
-interface Page<T> {
-    totalRecords: number;
-    totalPages: number;
-    previousPage: number;
-    nextPage: number;
-    hasPreviousPage: boolean;
-    hasNextPage: boolean;
-    records: T[];
-}
-
 const list = async (
     context,
-    parameters: Parameters
+    parameters: ListParameters
 ): Promise<Page<ExternalTestSuite>> => {
     const { error, value } = filterSchema.validate(parameters);
     if (error) {
