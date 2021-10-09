@@ -90,6 +90,7 @@ const typeDefinitions = `
         description: String
         content: String
         questions: [Question!]
+        exercise: TestSuite
         chapter: Chapter!
         creator: User!
         slug: String!

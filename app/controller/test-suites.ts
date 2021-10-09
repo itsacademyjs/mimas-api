@@ -43,7 +43,6 @@ export const list = async (
     }
 
     const filters: any = {
-        author: context.user._id,
         status: {
             $ne: "deleted",
         },

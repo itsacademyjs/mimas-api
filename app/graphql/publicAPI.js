@@ -72,12 +72,8 @@ const resolvers = {
             articles.getBySlug(context.request, values.slug, true),
 
         getTestSuites: async (object, values, context) =>
-            testSuites.list(
-                context.request,
-                values.page,
-                values.limit,
-                values.search
-            ),
+            testSuites.list(context.request, values),
+
         getTestSuiteById: async (object, values, context) =>
             testSuites.getById(context.request, values.testSuiteId),
     },
@@ -96,6 +92,13 @@ const resolvers = {
     Section: {
         creator: async (parent, values, context) =>
             users.getById(context.request, parent.creator),
+
+        exercise: async (parent, values, context) => {
+            if (!parent.exercise) {
+                return null;
+            }
+            return testSuites.getById(context.request, parent.exercise);
+        },
     },
 };
 

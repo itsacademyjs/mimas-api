@@ -7,6 +7,7 @@ const {
     sections,
     users,
     articles,
+    testSuites,
 } = require("../controller");
 const { jwtCheck, requireRole } = require("../middleware");
 
@@ -77,6 +78,7 @@ const typeDefs = gql`
             description: String
             content: String
             questions: [QuestionInput!]
+            exercise: ID
         ): Section!
         publishSection(sectionId: ID!): Section!
         unpublishSection(sectionId: ID!): Section!
@@ -115,6 +117,9 @@ const typeDefs = gql`
         getArticles(page: Int, limit: Int): ArticlePage!
         getArticleById(articleId: ID!): Article!
         getArticleBySlug(slug: String): Article!
+
+        getTestSuites(page: Int, limit: Int, search: String): TestSuitePage!
+        getTestSuiteById(testSuiteId: ID!): TestSuite!
     }
 `;
 
@@ -228,6 +233,13 @@ const resolvers = {
 
         getArticleBySlug: async (object, values, context) =>
             articles.getBySlug(context.request, values.slug, false),
+
+        // Test Suite
+
+        getTestSuites: async (object, values, context) =>
+            testSuites.list(context.request, values),
+        getTestSuiteById: async (object, values, context) =>
+            testSuites.getById(context.request, values.testSuiteId),
     },
     Course: {
         creator: async (parent, values, context) =>
@@ -244,6 +256,12 @@ const resolvers = {
     Section: {
         creator: async (parent, values, context) =>
             users.getById(context.request, parent.creator),
+        exercise: async (parent, values, context) => {
+            if (!parent.exercise) {
+                return null;
+            }
+            return testSuites.getById(context.request, parent.exercise);
+        },
     },
 };
 

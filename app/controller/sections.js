@@ -30,6 +30,7 @@ const toExternal = (section) => ({
             correct: option.correct,
         })),
     })),
+    exercise: section.exercise,
     createdAt: section.createdAt.toISOString(),
     updatedAt: section.updatedAt.toISOString(),
 });
