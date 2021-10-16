@@ -171,6 +171,37 @@ const getById = async (context, courseId, onlyPublished) => {
     return toExternal(course);
 };
 
+const getBySlug = async (context, slug, onlyPublished) => {
+    if (!slug) {
+        throw new BadRequestError("The specified slug is empty.");
+    }
+
+    const filters = {
+        slug,
+        ...(onlyPublished
+            ? { status: "public" }
+            : { creator: context.user._id }),
+        status: { $ne: "deleted" },
+    };
+    const course = await Course.findOne(filters).exec();
+
+    /* We return a 404 error:
+     * 1. If we did not find the course.
+     * 2. Or, we found the course, but the current user does not own,
+     *    and it is unpublished.
+     */
+    if (
+        !course ||
+        (course.status !== "public" && !course.creator.equals(context.user._id))
+    ) {
+        throw new NotFoundError(
+            "Cannot find a course with the specified slug."
+        );
+    }
+
+    return toExternal(course);
+};
+
 // TODO: If there no images and the course is published, it needs to unpublished.
 const update = async (context, courseId, attributes) => {
     if (!constants.identifierPattern.test(courseId)) {
@@ -352,6 +383,7 @@ module.exports = {
     create,
     list,
     getById,
+    getBySlug,
     update,
     publish,
     unpublish,
