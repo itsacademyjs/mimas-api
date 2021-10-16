@@ -107,6 +107,7 @@ const typeDefs = gql`
     type Query {
         getCourses(page: Int, limit: Int): CoursePage!
         getCourseById(courseId: ID!): Course!
+        getCourseBySlug(slug: String!): Course
 
         getChapters(courseId: ID!, page: Int, limit: Int): [Chapter!]!
         getChapterById(chapterId: ID!): Chapter!
@@ -206,6 +207,9 @@ const resolvers = {
             );
             return result;
         },
+
+        getCourseBySlug: async (object, values, context) =>
+            courses.getBySlug(context.request, values.slug, false),
 
         // Chapter
 
