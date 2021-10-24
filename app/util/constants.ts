@@ -296,6 +296,7 @@ const sectionStatuses = tuple(
     "banned"
 );
 const playlistStatuses = tuple(
+    "path",
     "public",
     "private",
     "deleted",
