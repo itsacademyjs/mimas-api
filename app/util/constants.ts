@@ -1,16 +1,18 @@
 // eslint-disable-next-line camelcase
-const { by639_1 } = require("iso-language-codes");
+import { by639_1 } from "iso-language-codes";
+
+const tuple = <T extends string[]>(...values: T) => values;
 
 const paginateMaxLimit = 250;
 const paginateMinLimit = 20;
 
 const UUID_NAMESPACE = "698e8c80-3c95-475c-babe-035cdbf1ecf4";
 
-const genders = ["male", "female", "other"];
+const genders = tuple("male", "female", "other");
 
 const languageCodes = Object.keys(by639_1);
 
-const countryCodes = [
+const countryCodes = tuple(
     "AFG", // Afghanistan
     "ALB", // Albania
     "DZA", // Algeria
@@ -259,30 +261,64 @@ const countryCodes = [
     "YEM", // Yemen
     "ZMB", // Zambia
     "ZWE", // Zimbabwe
-    "ALA", // Åland Islands"
-];
+    "ALA" // Åland Islands"
+);
 
 const identifierPattern = /^[a-z0-9]{24}$/;
 
-const userStatuses = ["active", "inactive", "banned"];
-const articleStatuses = ["public", "private", "deleted", "archieved", "banned"];
-const courseStatuses = ["public", "private", "deleted", "archieved", "banned"];
-const chapterStatuses = ["public", "private", "deleted", "archieved", "banned"];
-const sectionStatuses = ["public", "private", "deleted", "archieved", "banned"];
+const userStatuses = tuple("active", "inactive", "banned");
+const articleStatuses = tuple(
+    "public",
+    "private",
+    "deleted",
+    "archieved",
+    "banned"
+);
+const courseStatuses = tuple(
+    "public",
+    "private",
+    "deleted",
+    "archieved",
+    "banned"
+);
+const chapterStatuses = tuple(
+    "public",
+    "private",
+    "deleted",
+    "archieved",
+    "banned"
+);
+const sectionStatuses = tuple(
+    "public",
+    "private",
+    "deleted",
+    "archieved",
+    "banned"
+);
+const playlistStatuses = tuple(
+    "public",
+    "private",
+    "deleted",
+    "archieved",
+    "banned"
+);
 
-const courseLevels = ["beginner", "intermediate", "expert", "all_levels"];
+const courseLevels = tuple("beginner", "intermediate", "expert", "all_levels");
 
-const sectionTypes = [
+const sectionTypes = tuple(
     "video",
     "article",
     "quiz",
     "coding_excercise",
-    "assignment",
-];
+    "assignment"
+);
 
-const questionTypes = ["single_correct_option", "multiple_correct_options"];
+const questionTypes = tuple(
+    "single_correct_option",
+    "multiple_correct_options"
+);
 
-module.exports = {
+export {
     paginateMaxLimit,
     paginateMinLimit,
     languageCodes,
@@ -295,6 +331,7 @@ module.exports = {
     courseStatuses,
     chapterStatuses,
     sectionStatuses,
+    playlistStatuses,
     courseLevels,
     sectionTypes,
     questionTypes,
