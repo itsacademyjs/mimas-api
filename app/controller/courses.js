@@ -138,6 +138,21 @@ const list = async (context, parameters, privateRequest) => {
     };
 };
 
+const listByIds = async (context, courseIds) => {
+    const unorderedCourses = await Course.find({
+        _id: { $in: courseIds },
+        status: { $ne: "deleted" },
+    }).exec();
+    const object = {};
+    // eslint-disable-next-line no-restricted-syntax
+    for (const course of unorderedCourses) {
+        object[course._id] = course;
+    }
+    // eslint-disable-next-line security/detect-object-injection
+    const result = courseIds.map((key) => object[key]);
+    return result;
+};
+
 const getById = async (context, courseId, onlyPublished) => {
     if (!constants.identifierPattern.test(courseId)) {
         throw new BadRequestError(
@@ -382,6 +397,7 @@ const remove = async (context, courseId) => {
 module.exports = {
     create,
     list,
+    listByIds,
     getById,
     getBySlug,
     update,
