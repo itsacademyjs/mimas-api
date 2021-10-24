@@ -229,4 +229,37 @@ const unpublish = async (context, playlistId: string) => {
     return toExternal(playlist);
 };
 
-export { create, getById, list, update, publish, unpublish };
+const remove = async (context, playlistId: string) => {
+    if (!constants.identifierPattern.test(playlistId)) {
+        throw new BadRequestError(
+            "The specified playlist identifier is invalid."
+        );
+    }
+
+    const result = await PlaylistModel.findOneAndUpdate(
+        {
+            _id: playlistId,
+            creator: context.user._id,
+            status: {
+                $ne: "deleted",
+            },
+        },
+        {
+            status: "deleted",
+        },
+        {
+            new: true,
+            lean: true,
+        }
+    );
+
+    if (!result) {
+        throw new NotFoundError(
+            "A playlist with the specified identifier does not exist."
+        );
+    }
+
+    return true;
+};
+
+export { create, getById, list, update, publish, unpublish, remove };
