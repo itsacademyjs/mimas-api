@@ -1,5 +1,7 @@
-import { Schema, model } from "mongoose";
+import { Schema, model, ObjectId, Document } from "mongoose";
 import paginate from "mongoose-paginate-v2";
+
+import type { Playlist } from "../types";
 
 import { playlistStatuses } from "../util/constants";
 
@@ -42,4 +44,4 @@ const playlistSchema = new Schema(
 
 playlistSchema.plugin(paginate);
 
-export default model("Playlist", playlistSchema);
+export default model<Playlist>("Playlist", playlistSchema);
