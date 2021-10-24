@@ -1,10 +1,14 @@
+import type { Document } from "mongoose";
+
 import joi from "joi";
 
-import { Playlist } from "../model";
+import type { Playlist } from "../types";
+
+import { PlaylistModel } from "../model";
 import { identifierPattern } from "../util/constants";
 import { BadRequestError, NotFoundError } from "../util";
 
-const toExternal = (playlist) => {
+const toExternal = (playlist: Playlist & Document<any, any, Playlist>) => {
     const { _id, title, description, courses, status } = playlist;
     return {
         id: _id.toString(),
@@ -39,7 +43,7 @@ const create = async (context, attributes) => {
         throw new BadRequestError(error.message);
     }
 
-    const newPlaylist = new Playlist({
+    const newPlaylist = new PlaylistModel({
         ...value,
         creator: context.user._id,
         status: "private",
@@ -47,6 +51,36 @@ const create = async (context, attributes) => {
     await newPlaylist.save();
 
     return toExternal(newPlaylist);
+};
+
+const getById = async (context, playlistId) => {
+    if (!identifierPattern.test(playlistId)) {
+        throw new BadRequestError(
+            "The specified playlist identifier is invalid."
+        );
+    }
+
+    const filters = { _id: playlistId };
+    const playlist = await PlaylistModel.findOne(filters).exec();
+
+    /* We return a 404 error:
+     * 1. If we did not find the playlist.
+     * 2. Or, we found the playlist, but it is deleted.
+     * 3. Or, we found the playlist, but the current user does not own,
+     *    and it is unpublished.
+     */
+    if (
+        !playlist ||
+        playlist.status === "deleted" ||
+        (playlist.status !== "public" &&
+            !(playlist.creator as any).equals(context.user._id))
+    ) {
+        throw new NotFoundError(
+            "Cannot find a playlist with the specified identifier."
+        );
+    }
+
+    return toExternal(playlist);
 };
 
 const update = async (context, playlistId, attributes) => {
@@ -63,7 +97,7 @@ const update = async (context, playlistId, attributes) => {
         throw new BadRequestError(error.message);
     }
 
-    const playlist = await Playlist.findOneAndUpdate(
+    const playlist = await PlaylistModel.findOneAndUpdate(
         {
             _id: playlistId,
             creator: context.user._id,
@@ -87,4 +121,4 @@ const update = async (context, playlistId, attributes) => {
     return toExternal(playlist);
 };
 
-export { create, update };
+export { create, getById, update };
