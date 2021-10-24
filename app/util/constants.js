@@ -269,6 +269,13 @@ const articleStatuses = ["public", "private", "deleted", "archieved", "banned"];
 const courseStatuses = ["public", "private", "deleted", "archieved", "banned"];
 const chapterStatuses = ["public", "private", "deleted", "archieved", "banned"];
 const sectionStatuses = ["public", "private", "deleted", "archieved", "banned"];
+const playlistStatuses = [
+    "public",
+    "private",
+    "deleted",
+    "archieved",
+    "banned",
+];
 
 const courseLevels = ["beginner", "intermediate", "expert", "all_levels"];
 
@@ -295,6 +302,7 @@ module.exports = {
     courseStatuses,
     chapterStatuses,
     sectionStatuses,
+    playlistStatuses,
     courseLevels,
     sectionTypes,
     questionTypes,
