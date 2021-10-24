@@ -19,6 +19,12 @@ const toExternal = (playlist: Playlist & Document<any, any, Playlist>) => {
     };
 };
 
+/**
+ * A direct status is a status that can be specified by a client when creating
+ * or updating a playlist.
+ */
+const directStatuses = ["public", "private", "path"];
+
 const createSchema = joi.object({
     title: joi.string().max(512).allow("").default(""),
     description: joi.string().max(1024).allow("").default(""),
@@ -26,12 +32,17 @@ const createSchema = joi.object({
         .array()
         .items(joi.string().regex(constants.identifierPattern))
         .default([]),
+    status: joi
+        .string()
+        .valid(...directStatuses)
+        .default("private"),
 });
 
 const updateSchema = joi.object({
     title: joi.string().max(512).allow(""),
     description: joi.string().max(1024).allow(""),
     courses: joi.array().items(joi.string().regex(constants.identifierPattern)),
+    status: joi.string().valid(...directStatuses),
 });
 
 const filterSchema = joi.object({
@@ -48,6 +59,8 @@ const create = async (context, attributes) => {
     const { error, value } = createSchema.validate(attributes, {
         stripUnknown: true,
     });
+
+    // TODO: if value.status === 'path' then check if the current user authorization.
 
     if (error) {
         throw new BadRequestError(error.message);
@@ -135,6 +148,8 @@ const update = async (context, playlistId, attributes) => {
             "The specified playlist identifier is invalid."
         );
     }
+
+    // TODO: if value.status === 'path' then check if the current user authorization.
 
     const { error, value } = updateSchema.validate(attributes, {
         stripUnknown: true,
