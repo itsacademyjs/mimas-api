@@ -25,6 +25,11 @@ const playlistSchema = new Schema(
             ],
             default: [],
         },
+        creator: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+        },
         status: {
             type: String,
             enum: playlistStatuses,
