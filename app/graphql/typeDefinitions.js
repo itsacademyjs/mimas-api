@@ -10,6 +10,7 @@ const {
     sectionStatuses,
     articleStatuses,
     questionTypes,
+    playlistStatuses,
 } = require("../util/constants");
 
 const typeDefinitions = `
@@ -51,6 +52,10 @@ const typeDefinitions = `
 
     enum ArticleStatus {
         ${articleStatuses.join("\n")}
+    }
+
+    enum PlaylistStatus {
+        ${playlistStatuses.join("\n")}
     }
 
     type User {
@@ -187,6 +192,25 @@ const typeDefinitions = `
         hasPreviousPage: Boolean!
         hasNextPage: Boolean!
         records: [TestSuite!]!
+    }
+
+    type Playlist {
+        id: String!
+        title: String!
+        description: String!
+        courses: [Course!]!
+        creator: User!
+        status: PlaylistStatus!
+    }
+
+    type PlaylistPage {
+        totalRecords: Int!
+        totalPages: Int!
+        previousPage: Int!
+        nextPage: Int!
+        hasPreviousPage: Boolean!
+        hasNextPage: Boolean!
+        records: [Playlist!]!
     }
 
     input QuestionOptionInput {
