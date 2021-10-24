@@ -8,6 +8,7 @@ const {
     users,
     articles,
     testSuites,
+    playlists,
 } = require("../controller");
 const { jwtCheck, requireRole } = require("../middleware");
 
@@ -102,6 +103,21 @@ const typeDefs = gql`
         publishArticle(articleId: ID!): Section!
         unpublishArticle(articleId: ID!): Section!
         deleteArticle(articleId: ID!): Boolean!
+
+        createPlaylist(
+            title: String
+            description: String
+            courses: [String!]!
+        ): Playlist!
+        updatePlaylist(
+            playlistId: ID!
+            title: String
+            description: String
+            courses: [String!]!
+        ): Playlist!
+        publishPlaylist(playlistId: ID!): Playlist!
+        unpublishPlaylist(playlistId: ID!): Playlist!
+        deletePlaylist(playlistId: ID!): Playlist!
     }
 
     type Query {
@@ -121,6 +137,9 @@ const typeDefs = gql`
 
         getTestSuites(page: Int, limit: Int, search: String): TestSuitePage!
         getTestSuiteById(testSuiteId: ID!): TestSuite!
+
+        getPlaylists(page: Int, limit: Int): PlaylistPage!
+        getPlaylistById(playlistId: ID!): Playlist!
     }
 `;
 
@@ -193,6 +212,23 @@ const resolvers = {
 
         deleteArticle: async (parent, values, context) =>
             articles.remove(context.request, values.articleId),
+
+        // Playlist
+
+        createPlaylist: async (parent, values, context) =>
+            playlists.create(context.request, values),
+
+        updatePlaylist: async (parent, values, context) =>
+            playlists.update(context.request, values.playlistId, values),
+
+        publishPlaylist: async (parent, values, context) =>
+            playlists.publish(context.request, values.playlistId),
+
+        unpublishPlaylist: async (parent, values, context) =>
+            playlists.unpublish(context.request, values.playlistId),
+
+        deletePlaylist: async (parent, values, context) =>
+            playlists.remove(context.request, values.playlistId),
     },
     Query: {
         // Course
@@ -244,6 +280,14 @@ const resolvers = {
             testSuites.list(context.request, values),
         getTestSuiteById: async (object, values, context) =>
             testSuites.getById(context.request, values.testSuiteId),
+
+        // Playlist
+
+        getPlaylists: async (parent, values, context) =>
+            playlists.list(context.request, values),
+
+        getPlaylistById: async (parent, values, context) =>
+            playlists.getById(context.request, values.playlistId),
     },
     Course: {
         creator: async (parent, values, context) =>
@@ -266,6 +310,13 @@ const resolvers = {
             }
             return testSuites.getById(context.request, parent.exercise);
         },
+    },
+    Playlist: {
+        creator: async (parent, values, context) =>
+            users.getById(context.request, parent.creator),
+
+        courses: async (parent, values, context) =>
+            courses.listByIds(context.request, parent.courses),
     },
 };
 
