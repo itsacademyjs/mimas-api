@@ -69,7 +69,6 @@ const create = async (context, attributes) => {
     const newPlaylist = new PlaylistModel({
         ...value,
         creator: context.user._id,
-        status: "private",
     });
     await newPlaylist.save();
 
