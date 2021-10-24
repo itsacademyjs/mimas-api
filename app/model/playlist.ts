@@ -9,7 +9,6 @@ const playlistSchema = new Schema(
             type: String,
             maxlength: 512,
             trim: true,
-            required: true,
         },
         description: {
             type: String,
