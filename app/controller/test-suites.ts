@@ -1,7 +1,7 @@
 import { Types } from "mongoose";
 import joi from "joi";
 
-import constants from "../util/constants";
+import * as constants from "../util/constants";
 import { BadRequestError, NotFoundError, escapeRegex } from "../util";
 import { TestSuite as TestSuiteModel } from "../model";
 import { ExternalTestSuite, TestSuite, Page, ListParameters } from "../types";
